@@ -1,0 +1,21 @@
+---
+#sample config file
+version: 0.1
+log:
+  level: info
+  file: /tmp/godoauth.log
+storage:
+  vault:
+    host: localhost
+    port: 8200
+http:
+  addr: :5000
+  tls:
+    certificate: /path/to/x509/public
+    key: /path/to/x509/private
+    clientcas:
+      - /path/to/ca.pem
+      - /path/to/another/ca.pem
+token:
+   issuer: "Go Docker Token Auth"
+   expiration: 800
