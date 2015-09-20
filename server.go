@@ -1,14 +1,13 @@
 package godoauth
 
 import (
-	//	"github.com/gorilla/handlers"
 	"crypto/tls"
-	"github.com/gorilla/mux"
 	"log"
 	"net"
 	"net/http"
-	//	"os"
 	"time"
+
+	"github.com/gorilla/mux"
 )
 
 var clientTimeout time.Duration
