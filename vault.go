@@ -16,7 +16,7 @@ type VaultClient struct {
 type VaultUser struct {
 	Username string
 	Password string
-	Access   map[string]Privilege
+	Access   map[string]Priv
 }
 
 //RetrieveUser simple retrieve option for POC
@@ -68,7 +68,7 @@ func (c *VaultClient) RetrieveUser(namespace, user string) (*VaultUser, *HTTPAut
 		return nil, ErrInternal
 	}
 
-	accessMap := make(map[string]Privilege)
+	accessMap := make(map[string]Priv)
 	semiColonSplit := strings.Split(respData.Data.Access, ";")
 	for _, x := range semiColonSplit {
 		xx := strings.Split(x, ":")
@@ -76,7 +76,7 @@ func (c *VaultClient) RetrieveUser(namespace, user string) (*VaultUser, *HTTPAut
 			log.Printf("expected length 3: %v", err)
 			return nil, ErrInternal
 		}
-		accessMap[xx[1]] = NewPrivilege(xx[2])
+		accessMap[xx[1]] = NewPriv(xx[2])
 	}
 
 	return &VaultUser{

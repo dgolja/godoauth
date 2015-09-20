@@ -12,43 +12,43 @@ import (
 	"github.com/dgrijalva/jwt-go"
 )
 
-type Privilege uint
+type Priv uint
 
 const (
-	PrivilegeIllegal Privilege = 0
-	PrivilegePush              = 1
-	PrivilegePull              = 2
-	PrivilegeAll               = 3 // NB: equivlant to (PrivilegePush | PrivilegePull)
+	PrivIllegal Priv = 0
+	PrivPush              = 1
+	PrivPull              = 2
+	PrivAll               = 3 // NB: equivlant to (PrivPush | PrivPull)
 )
 
-func (p Privilege) Has(q Privilege) bool {
+func (p Priv) Has(q Priv) bool {
 	return (p&q == q)
 }
 
-func (p Privilege) Valid() bool {
-	return (PrivilegeIllegal < p && p <= PrivilegeAll)
+func (p Priv) Valid() bool {
+	return (PrivIllegal < p && p <= PrivAll)
 }
 
-func NewPrivilege(privilege string) Privilege {
+func NewPriv(privilege string) Priv {
 	switch privilege {
 	case "push":
-		return PrivilegePush
+		return PrivPush
 	case "pull":
-		return PrivilegePull
+		return PrivPull
 	case "push,pull", "pull,push", "*":
-		return PrivilegePush | PrivilegePull
+		return PrivPush | PrivPull
 	default:
-		return PrivilegeIllegal
+		return PrivIllegal
 	}
 }
 
-func (p Privilege) Actions() []string {
+func (p Priv) Actions() []string {
 	result := make([]string, 0)
-	if p.Has(PrivilegePush) {
+	if p.Has(PrivPush) {
 		result = append(result, "push")
 	}
 
-	if p.Has(PrivilegePull) {
+	if p.Has(PrivPull) {
 		result = append(result, "pull")
 	}
 	return result
@@ -71,20 +71,20 @@ type TokenAuthHandler struct {
 type Scope struct {
 	Type    string    // repository
 	Name    string    // foo/bat
-	Actions Privilege // Privilege who would guess that ?
+	Actions Priv // Priv who would guess that ?
 }
 
 func scopeAllowed(reqscopes *Scope, vuser *VaultUser) *Scope {
 
-	allowedPrivileges := vuser.Access[reqscopes.Name]
-	if reqscopes.Type == "" || allowedPrivileges == PrivilegeIllegal {
+	allowedPrivs := vuser.Access[reqscopes.Name]
+	if reqscopes.Type == "" || allowedPrivs == PrivIllegal {
 		return &Scope{}
 	}
 
-	if allowedPrivileges.Has(reqscopes.Actions) {
+	if allowedPrivs.Has(reqscopes.Actions) {
 		return reqscopes
 	} else {
-		return &Scope{"repository", reqscopes.Name, allowedPrivileges}
+		return &Scope{"repository", reqscopes.Name, allowedPrivs}
 	}
 }
 
@@ -188,7 +188,7 @@ func (h *TokenAuthHandler) getScopes(req *http.Request) (*Scope, error) {
 		return nil, HTTPBadRequest("malformed scope: 'repository' not specified")
 	}
 
-	p := NewPrivilege(getscope[2])
+	p := NewPriv(getscope[2])
 	if !p.Valid() {
 		return nil, HTTPBadRequest("malformed scope: invalid privilege")
 	}
