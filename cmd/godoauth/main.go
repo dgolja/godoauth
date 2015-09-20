@@ -3,12 +3,13 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/n1tr0g/godoauth"
 	"os"
 	"os/signal"
 	"path/filepath"
 	"runtime"
 	"syscall"
+
+	"github.com/n1tr0g/godoauth"
 )
 
 var (
