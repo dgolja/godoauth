@@ -9,7 +9,6 @@ storage:
     proto: http
     host: 127.0.0.1
     port: 8200
-    mount: registry
     auth_token: dbXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXX
 http:
   timeout: 5s

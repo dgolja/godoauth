@@ -34,7 +34,6 @@ type Vault struct {
 	Port      int    `yaml:"port"`
 	AuthToken string `yaml:"auth_token"`
 	Proto     string `yaml:"proto"`
-	Mount     string `yaml:"mount"`
 }
 
 type ServerConf struct {

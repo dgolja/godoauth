@@ -3,6 +3,7 @@ package godoauth
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"strconv"
 	"strings"
 
@@ -21,7 +22,7 @@ type VaultUser struct {
 
 //RetrieveUser simple retrieve option for POC
 //BUG(dejan) We need to add some context and potentiall a pool of clients
-func (c *VaultClient) RetrieveUser(user string) (*VaultUser, error) {
+func (c *VaultClient) RetrieveUser(namespace, user string) (*VaultUser, error) {
 
 	config := api.DefaultConfig()
 	config.Address = c.Config.Proto + "://" + c.Config.Host + ":" + strconv.Itoa(c.Config.Port)
@@ -31,9 +32,18 @@ func (c *VaultClient) RetrieveUser(user string) (*VaultUser, error) {
 		return nil, fmt.Errorf("error creating client: %v", err)
 	}
 	client.SetToken(c.Config.AuthToken)
-	req := client.NewRequest("GET", "/v1/"+c.Config.Mount+"/"+user)
+	req := client.NewRequest("GET", "/v1/"+namespace+"/"+user)
 	resp, err := client.RawRequest(req)
 	if err != nil {
+		if resp != nil {
+			// that means we don't have access to this resource
+			// so we should log an error but response to client
+			// that he has no access
+			if resp.StatusCode == 403 {
+				log.Printf("error calling vault API: %v", err)
+				return nil, fmt.Errorf("user is not available")
+			}
+		}
 		return nil, fmt.Errorf("error calling vault API: %v", err)
 	}
 

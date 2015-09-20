@@ -91,10 +91,10 @@ func scopeAllowed(reqscopes *Scope, vuser *VaultUser) *Scope {
 
 func (h *TokenAuthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
-	log.Println("request ", r.RequestURI)
-	for k, v := range r.Header {
-		log.Println("Header:", k, "Value:", v)
-	}
+	// log.Println("request ", r.RequestURI)
+	// for k, v := range r.Header {
+	// 	log.Println("Header:", k, "Value:", v)
+	// }
 
 	service, err := h.getService(r)
 	if err != nil {
@@ -116,7 +116,7 @@ func (h *TokenAuthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			scopes = &Scope{}
 		}
 	}
-	log.Printf("%#v", scopes)
+	// log.Printf("%#v", scopes)
 
 	userdata, err := h.authAccount(r, account)
 	if err != nil {
@@ -150,7 +150,7 @@ func (h *TokenAuthHandler) authAccount(req *http.Request, account string) (*Vaul
 	}
 	if haveAuth {
 		vaultClient := VaultClient{&h.Config.Storage.Vault}
-		vuser, err := vaultClient.RetrieveUser(user)
+		vuser, err := vaultClient.RetrieveUser(req.FormValue("service"), user)
 		if err != nil {
 			log.Print(err)
 			return nil, err
