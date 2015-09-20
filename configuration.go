@@ -16,7 +16,7 @@ type Configuration struct {
 	Version string     `yaml:"version,omitempty"`
 	Log     Log        `yaml:"log,omitempty"`
 	Storage Storage    `yaml:"storage,omitempty"`
-	Http    ServerConf `yaml:"http"`
+	HTTP    ServerConf `yaml:"http"`
 	Token   Token      `yaml:"token"`
 }
 

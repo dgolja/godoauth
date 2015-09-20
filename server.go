@@ -36,13 +36,13 @@ func NewServer(c *Configuration) (*Server, error) {
 		err error
 	)
 
-	if c.Http.Tls.Certificate != "" && c.Http.Tls.Key != "" {
-		cert, err := tls.LoadX509KeyPair(c.Http.Tls.Certificate, c.Http.Tls.Key)
+	if c.HTTP.TLS.Certificate != "" && c.HTTP.TLS.Key != "" {
+		cert, err := tls.LoadX509KeyPair(c.HTTP.TLS.Certificate, c.HTTP.TLS.Key)
 		if err != nil {
 			return nil, err
 		}
 
-		l, err = tls.Listen("tcp", c.Http.Addr, &tls.Config{
+		l, err = tls.Listen("tcp", c.HTTP.Addr, &tls.Config{
 			Certificates: []tls.Certificate{cert},
 		})
 		if err != nil {
@@ -50,14 +50,14 @@ func NewServer(c *Configuration) (*Server, error) {
 		}
 		log.Println("Listener on HTTPS:", l.Addr().String())
 	} else {
-		l, err = net.Listen("tcp", c.Http.Addr)
+		l, err = net.Listen("tcp", c.HTTP.Addr)
 		if err != nil {
 			log.Panic("Server Listen HTTP Error: ", err)
 		}
 		log.Println("Listener on HTTP:", l.Addr().String())
 	}
 
-	clientTimeout, err := time.ParseDuration(c.Http.Timeout)
+	clientTimeout, err := time.ParseDuration(c.HTTP.Timeout)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing client timeout: %v", err)
 	}

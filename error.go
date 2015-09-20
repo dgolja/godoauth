@@ -15,12 +15,12 @@ var ErrUnauthorized *HTTPAuthError = NewHTTPError("Unauthorized Access", http.St
 var ErrForbidden *HTTPAuthError = NewHTTPError("Forbiden Access", http.StatusForbidden)
 var ErrInternal *HTTPAuthError = NewHTTPError("Internal server error", http.StatusInternalServerError)
 
-// HTTPBadRequest returns *HttpError with supplied informative string and error code 400.
+// HTTPBadRequest returns *HTTPError with supplied informative string and error code 400.
 func HTTPBadRequest(s string) (err *HTTPAuthError) {
 	return NewHTTPError(s, http.StatusBadRequest)
 }
 
-// NewHTTPError creates new HttpError with supplied error message and code.
+// NewHTTPError creates new HTTPError with supplied error message and code.
 // The message is displayed to the end user, so please be careful.
 func NewHTTPError(s string, code int) (err *HTTPAuthError) {
 	return &HTTPAuthError{s, code}
