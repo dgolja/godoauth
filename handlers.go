@@ -16,9 +16,9 @@ type Priv uint
 
 const (
 	PrivIllegal Priv = 0
-	PrivPush              = 1
-	PrivPull              = 2
-	PrivAll               = 3 // NB: equivlant to (PrivPush | PrivPull)
+	PrivPush         = 1
+	PrivPull         = 2
+	PrivAll          = 3 // NB: equivlant to (PrivPush | PrivPull)
 )
 
 func (p Priv) Has(q Priv) bool {
@@ -69,9 +69,9 @@ type TokenAuthHandler struct {
 
 // Scope definition
 type Scope struct {
-	Type    string    // repository
-	Name    string    // foo/bat
-	Actions Priv // Priv who would guess that ?
+	Type    string // repository
+	Name    string // foo/bat
+	Actions Priv   // Priv who would guess that ?
 }
 
 func scopeAllowed(reqscopes *Scope, vuser *VaultUser) *Scope {
