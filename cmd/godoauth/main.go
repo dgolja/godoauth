@@ -6,7 +6,6 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
-	"runtime"
 	"syscall"
 
 	"github.com/n1tr0g/godoauth"
@@ -44,21 +43,16 @@ func main() {
 	}
 
 	fmt.Printf("Starting %s version: %s\n", name, version)
-	// Set parallelism.
-	runtime.GOMAXPROCS(runtime.NumCPU())
-	fmt.Fprintf(os.Stdout, "GOMAXPROCS set to %d\n", runtime.GOMAXPROCS(0))
 
 	server, err := godoauth.NewServer(&config)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Error while creating new server: ", err)
 		os.Exit(1)
 	}
-
 	server.Start()
 
 	// waiting for a termination signal to clean up
 	interruptChan := make(chan os.Signal)
 	signal.Notify(interruptChan, os.Interrupt, syscall.SIGTERM, syscall.SIGHUP)
 	<-interruptChan
-
 }
