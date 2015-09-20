@@ -82,9 +82,12 @@ func (s *Server) getHandlers() http.Handler {
 		log.Fatal(err)
 	}
 
-	sharedClient := new(http.Client)
-	sharedClient.Timeout = clientTimeout
-	authHandler := &TokenAuthHandler{Client: sharedClient, Config: s.Config}
+	authHandler := &TokenAuthHandler{
+		Client: &http.Client{
+			Timeout: clientTimeout,
+		},
+		Config: s.Config,
+	}
 
 	router := mux.NewRouter()
 	router.Handle("/auth", authHandler)
