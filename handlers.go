@@ -18,7 +18,7 @@ const (
 	PrivilegeIllegal Privilege = 0
 	PrivilegePush              = 1
 	PrivilegePull              = 2
-	PrivilegeAll               = 3 // NB: equivlant to PrivilegePush & PrivilegePull
+	PrivilegeAll               = 3 // NB: equivlant to (PrivilegePush | PrivilegePull)
 )
 
 func (p Privilege) Has(q Privilege) bool {
