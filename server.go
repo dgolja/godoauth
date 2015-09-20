@@ -2,12 +2,11 @@ package godoauth
 
 import (
 	"crypto/tls"
+	"fmt"
 	"log"
 	"net"
 	"net/http"
 	"time"
-
-	"github.com/gorilla/mux"
 )
 
 var clientTimeout time.Duration
@@ -24,13 +23,6 @@ type Server struct {
 
 // NewServer returns a new instance of Server built from a config.
 func NewServer(c *Configuration) (*Server, error) {
-	s := &Server{
-		closing: make(chan struct{}),
-	}
-	s.Config = c
-
-	s.Handler = s.getHandlers()
-
 	// BUG(dejan) add support to write logs to a text file
 	//	if c.Log.File != "" {
 	//		// BUG(dejan): Implement file handler
@@ -44,8 +36,8 @@ func NewServer(c *Configuration) (*Server, error) {
 		err error
 	)
 
-	if s.Config.Http.Tls.Certificate != "" && s.Config.Http.Tls.Key != "" {
-		cert, err := tls.LoadX509KeyPair(s.Config.Http.Tls.Certificate, s.Config.Http.Tls.Key)
+	if c.Http.Tls.Certificate != "" && c.Http.Tls.Key != "" {
+		cert, err := tls.LoadX509KeyPair(c.Http.Tls.Certificate, c.Http.Tls.Key)
 		if err != nil {
 			return nil, err
 		}
@@ -64,34 +56,36 @@ func NewServer(c *Configuration) (*Server, error) {
 		}
 		log.Println("Listener on HTTP:", l.Addr().String())
 	}
-	s.Listener = l
-	return s, nil
-}
 
-//serverPing is an health check handler, so we can use ELB/HA proxy health check
-func serverPing(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("{\"message\": \"Save the Whales !\"}\n\r"))
-}
-
-func (s *Server) getHandlers() http.Handler {
-	clientTimeout, err := time.ParseDuration(s.Config.Http.Timeout)
+	clientTimeout, err := time.ParseDuration(c.Http.Timeout)
 	if err != nil {
-		log.Fatal(err)
+		return nil, fmt.Errorf("error parsing client timeout: %v", err)
 	}
 
 	authHandler := &TokenAuthHandler{
 		Client: &http.Client{
 			Timeout: clientTimeout,
 		},
-		Config: s.Config,
+		Config: c,
 	}
 
-	router := mux.NewRouter()
-	router.Handle("/auth", authHandler)
-	router.HandleFunc("/server-ping", serverPing)
-	return router
+	mux := http.NewServeMux()
+	mux.Handle("/auth", authHandler)
+	mux.HandleFunc("/server-ping", serverPing)
+
+	return &Server{
+		closing:  make(chan struct{}),
+		Config:   c,
+		Handler:  mux,
+		Listener: l,
+	}, nil
+}
+
+//serverPing is an health check handler, so we can use ELB/HA proxy health check
+func serverPing(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK) // this is set by default
+	w.Write([]byte("{\"message\": \"Save the Whales !\"}\n\r"))
 }
 
 //Start the Token Authentication server
