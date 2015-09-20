@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"syscall"
 
 	"github.com/n1tr0g/godoauth"
@@ -17,28 +16,32 @@ var (
 	commit  string
 )
 
+var (
+	confFile    string
+	showVersion bool
+)
+
+func init() {
+	flag.StringVar(&confFile, "config", "config.yaml", "Go Docker Token Auth Config file")
+	flag.BoolVar(&showVersion, "version", false, "show the version and exit")
+
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage of Go Docker Token Auth (version %v):\n", version)
+		flag.PrintDefaults()
+	}
+}
+
 func main() {
-	var (
-		showVersion bool
-		config      godoauth.Configuration
-		server      *godoauth.Server
-	)
-
-	fs := flag.NewFlagSet("Go Docker Token Auth "+version, flag.ExitOnError)
-
-	currentDir, _ := filepath.Abs(filepath.Dir(os.Args[0]))
-	confFile := fs.String("config", filepath.Join(currentDir, "config.yaml"), "Go Docker Token Auth Config file")
-	fs.BoolVar(&showVersion, "version", false, "show the version and exit")
-
-	fs.Parse(os.Args[1:])
+	flag.Parse()
 
 	if showVersion {
 		fmt.Fprintln(os.Stderr, os.Args[0], version)
 		return
 	}
 
+	var config godoauth.Configuration
 	if err := config.Parse(confFile); err != nil {
-		fmt.Fprintln(os.Stderr, "Error: ", err)
+		fmt.Fprintln(os.Stderr, "error parsing config file: ", err)
 		os.Exit(1)
 	}
 

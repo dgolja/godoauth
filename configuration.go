@@ -61,14 +61,13 @@ type Token struct {
 	privateKey libtrust.PrivateKey
 }
 
-func (c *Configuration) Parse(configurationPath *string) error {
-
-	in, err := ioutil.ReadFile(*configurationPath)
+func (c *Configuration) Parse(path string) error {
+	b, err := ioutil.ReadFile(path)
 	if err != nil {
 		return err
 	}
 
-	if err := yaml.Unmarshal(in, c); err != nil {
+	if err := yaml.Unmarshal(b, c); err != nil {
 		return err
 	}
 	if c.Token.Certificate != "" && c.Token.Key != "" {
@@ -84,7 +83,7 @@ func (c *Configuration) Parse(configurationPath *string) error {
 	}
 	// check if the library supports this sign algorithm
 	if alg := jwt.GetSigningMethod(sigAlg); alg == nil {
-		return fmt.Errorf("Not supported sign algorhithem: %s", sigAlg)
+		return fmt.Errorf("signing algorithm not supported: %s", sigAlg)
 	}
 	return nil
 }
