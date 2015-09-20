@@ -6,14 +6,16 @@ import (
 )
 
 type HTTPAuthError struct {
-	err string
-	Code  int
+	err  string
+	Code int
 }
 
 // Predefined internal error
-var ErrUnauthorized *HTTPAuthError = NewHTTPError("Unauthorized Access", http.StatusUnauthorized)
-var ErrForbidden *HTTPAuthError = NewHTTPError("Forbiden Access", http.StatusForbidden)
-var ErrInternal *HTTPAuthError = NewHTTPError("Internal server error", http.StatusInternalServerError)
+var (
+	ErrUnauthorized *HTTPAuthError = NewHTTPError("Unauthorized Access", http.StatusUnauthorized)
+	ErrForbidden                   = NewHTTPError("Forbiden Access", http.StatusForbidden)
+	ErrInternal                    = NewHTTPError("Internal server error", http.StatusInternalServerError)
+)
 
 // HTTPBadRequest returns *HTTPError with supplied informative string and error code 400.
 func HTTPBadRequest(s string) (err *HTTPAuthError) {
