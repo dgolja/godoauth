@@ -39,13 +39,13 @@ type Vault struct {
 type ServerConf struct {
 	Addr    string    `yaml:"addr"`
 	Timeout string    `yaml:"timeout"`
-	Tls     ServerTls `yaml:"tls"`
+	TLS     ServerTLS `yaml:"tls"`
 
 	publicKey  libtrust.PublicKey
 	privateKey libtrust.PrivateKey
 }
 
-type ServerTls struct {
+type ServerTLS struct {
 	Certificate string `yaml:"certificate,omitempty"`
 	Key         string `yaml:"key,omitempty"`
 }
