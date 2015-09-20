@@ -9,13 +9,13 @@ storage:
     host: localhost
     port: 8200
 http:
-  addr: :5000
+  timeout: 5s
+  addr: :5002
   tls:
-    certificate: /path/to/x509/public
-    key: /path/to/x509/private
-    clientcas:
-      - /path/to/ca.pem
-      - /path/to/another/ca.pem
+    certificate: certs/server.pem
+    key: certs/server.key
 token:
-   issuer: "Go Docker Token Auth"
+   issuer: Token
    expiration: 800
+   certificate: certs/server.pem
+   key: certs/server.key
