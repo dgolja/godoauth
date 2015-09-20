@@ -1,7 +1,6 @@
 package godoauth
 
 import (
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -91,7 +90,7 @@ func scopeAllowed(reqscopes *Scope, vuser *VaultUser) *Scope {
 
 func (h *TokenAuthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
-	// log.Println("request ", r.RequestURI)
+	log.Println("GET", r.RequestURI)
 	// for k, v := range r.Header {
 	// 	log.Println("Header:", k, "Value:", v)
 	// }
@@ -99,18 +98,17 @@ func (h *TokenAuthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	service, err := h.getService(r)
 	if err != nil {
 		log.Print(err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, err.Error(), err.(*HttpAuthError).Code)
 		return
 	}
-	log.Print(service)
+	//	log.Print("DEBUG",service)
 
 	account := r.FormValue("account")
 	scopes, err := h.getScopes(r)
 	if err != nil {
-		fmt.Println(err)
+		// log.Printf("DEBUG getScopes error %s\n", err)
 		if account == "" {
-			log.Printf("string error %s\n", err)
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			http.Error(w, err.Error(), err.(*HttpAuthError).Code)
 			return
 		} else {
 			scopes = &Scope{}
@@ -120,11 +118,11 @@ func (h *TokenAuthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	userdata, err := h.authAccount(r, account)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
+		http.Error(w, err.Error(), err.(*HttpAuthError).Code)
 		return
 	}
 	if userdata == nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
+		http.Error(w, err.Error(), http.StatusForbidden)
 		return
 	}
 
@@ -132,7 +130,7 @@ func (h *TokenAuthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	stringToken, err := h.CreateToken(grantedActions, service, account)
 	if err != nil {
-		log.Printf("string error %s\n", err)
+		log.Printf("token error %s\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -146,16 +144,15 @@ func (h *TokenAuthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (h *TokenAuthHandler) authAccount(req *http.Request, account string) (*VaultUser, error) {
 	user, pass, haveAuth := req.BasicAuth()
 	if account != "" && user != account {
-		return nil, errors.New("authoziration failue. account and user passed are diffrent.")
+		return nil, HttpBadRequest("authoziration failue. account and user passed are diffrent.")
 	}
 	if haveAuth {
 		vaultClient := VaultClient{&h.Config.Storage.Vault}
 		vuser, err := vaultClient.RetrieveUser(req.FormValue("service"), user)
 		if err != nil {
-			log.Print(err)
 			return nil, err
 		}
-		log.Printf("%#v", vuser)
+		log.Printf("DEBUG %#v", vuser)
 
 		if vuser.Username == user && vuser.Password == pass {
 			return vuser, nil
@@ -163,14 +160,14 @@ func (h *TokenAuthHandler) authAccount(req *http.Request, account string) (*Vaul
 			return nil, nil
 		}
 	} else {
-		return nil, errors.New("authorization header is missing. No public access for now")
+		return nil, ErrorUnauthorized
 	}
 }
 
 func (h *TokenAuthHandler) getService(req *http.Request) (string, error) {
 	service := req.FormValue("service")
 	if service == "" {
-		return "", errors.New("missing service from the request.")
+		return "", HttpBadRequest("missing service from the request.")
 	}
 	return service, nil
 }
@@ -179,22 +176,21 @@ func (h *TokenAuthHandler) getService(req *http.Request) (string, error) {
 func (h *TokenAuthHandler) getScopes(req *http.Request) (*Scope, error) {
 	scope := req.FormValue("scope")
 	if scope == "" {
-		return nil, errors.New("missing scope")
+		return nil, HttpBadRequest("missing scope")
 	}
 
 	if len(strings.Split(scope, ":")) != 3 {
-		return nil, errors.New("malformed scope")
+		return nil, HttpBadRequest("malformed scope")
 	}
 
 	getscope := strings.Split(scope, ":")
 	if getscope[0] != "repository" {
-		return nil, errors.New("malformed scope: 'repository' not specified")
+		return nil, HttpBadRequest("malformed scope: 'repository' not specified")
 	}
 
 	p := NewPrivilege(getscope[2])
-	fmt.Println(p, getscope[2])
 	if !p.Valid() {
-		return nil, errors.New("malformed scope: invalid privilege")
+		return nil, HttpBadRequest("malformed scope: invalid privilege")
 	}
 
 	return &Scope{

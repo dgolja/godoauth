@@ -2,7 +2,6 @@ package godoauth
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"strconv"
 	"strings"
@@ -22,29 +21,36 @@ type VaultUser struct {
 
 //RetrieveUser simple retrieve option for POC
 //BUG(dejan) We need to add some context and potentiall a pool of clients
-func (c *VaultClient) RetrieveUser(namespace, user string) (*VaultUser, error) {
+func (c *VaultClient) RetrieveUser(namespace, user string) (*VaultUser, *HttpAuthError) {
 
 	config := api.DefaultConfig()
 	config.Address = c.Config.Proto + "://" + c.Config.Host + ":" + strconv.Itoa(c.Config.Port)
-	fmt.Printf("vault config: %+v\n", config)
 	client, err := api.NewClient(config)
 	if err != nil {
-		return nil, fmt.Errorf("error creating client: %v", err)
+		log.Printf("error creating client: %v", err)
+		return nil, ErrorInternal
 	}
 	client.SetToken(c.Config.AuthToken)
 	req := client.NewRequest("GET", "/v1/"+namespace+"/"+user)
 	resp, err := client.RawRequest(req)
 	if err != nil {
+		log.Printf("DEBUG error calling vault API - %v", err)
 		if resp != nil {
+			log.Printf("DEBUG error code: %d", resp.StatusCode)
 			// that means we don't have access to this resource
 			// so we should log an error but response to client
 			// that he has no access
-			if resp.StatusCode == 403 {
-				log.Printf("error calling vault API: %v", err)
-				return nil, fmt.Errorf("user is not available")
+			switch resp.StatusCode {
+			case 403:
+				log.Print("DEBUG error vault token does not have enough permissions")
+				return nil, ErrorInternal
+			case 404:
+				return nil, ErrorForbidden
+			default:
+				return nil, NewHttpError(err.Error(), resp.StatusCode)
 			}
 		}
-		return nil, fmt.Errorf("error calling vault API: %v", err)
+		return nil, ErrorInternal
 	}
 
 	// fmt.Printf("%v\n", resp)
@@ -58,7 +64,8 @@ func (c *VaultClient) RetrieveUser(namespace, user string) (*VaultUser, error) {
 	dec := json.NewDecoder(resp.Body)
 	err = dec.Decode(&respData)
 	if err != nil {
-		return nil, fmt.Errorf("error parsing JSON response: %v", err)
+		log.Printf("error parsing JSON response: %v", err)
+		return nil, ErrorInternal
 	}
 
 	accessMap := make(map[string]Privilege)
@@ -66,7 +73,8 @@ func (c *VaultClient) RetrieveUser(namespace, user string) (*VaultUser, error) {
 	for _, x := range semiColonSplit {
 		xx := strings.Split(x, ":")
 		if len(xx) != 3 {
-			return nil, fmt.Errorf("expected length 3: %v", x)
+			log.Printf("expected length 3: %v", err)
+			return nil, ErrorInternal
 		}
 		accessMap[xx[1]] = NewPrivilege(xx[2])
 	}
