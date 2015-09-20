@@ -84,7 +84,6 @@ func NewServer(c *Configuration) (*Server, error) {
 //serverPing is an health check handler, so we can use ELB/HA proxy health check
 func serverPing(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK) // this is set by default
 	w.Write([]byte("{\"message\": \"Save the Whales !\"}\n\r"))
 }
 
