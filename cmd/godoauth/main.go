@@ -12,6 +12,7 @@ import (
 )
 
 var (
+	name    string = "Go Docker Token Authenticator - godoauth"
 	version string = "0.0.1"
 	commit  string
 )
@@ -41,17 +42,16 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Printf("Config:\n%+v\n", config)
+	fmt.Printf("Starting %s version: %s\n", name, version)
+	// Set parallelism.
+	runtime.GOMAXPROCS(runtime.NumCPU())
+	fmt.Fprintf(os.Stdout, "GOMAXPROCS set to %d\n", runtime.GOMAXPROCS(0))
 
 	server, err := godoauth.NewServer(&config)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Error while creating new server: ", err)
 		os.Exit(1)
 	}
-
-	// Set parallelism.
-	runtime.GOMAXPROCS(runtime.NumCPU())
-	fmt.Fprintf(os.Stdout, "GOMAXPROCS set to %d\n", runtime.GOMAXPROCS(0))
 
 	server.Start()
 
