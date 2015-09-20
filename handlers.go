@@ -75,6 +75,20 @@ type Scope struct {
 	Actions Privilege // Privilege who would guess that ?
 }
 
+func scopeAllowed(reqscopes *Scope, vuser *VaultUser) *Scope {
+
+	allowedPrivileges := vuser.Access[reqscopes.Name]
+	if reqscopes.Type == "" || allowedPrivileges == PrivilegeIllegal {
+		return &Scope{}
+	}
+
+	if allowedPrivileges.Has(reqscopes.Actions) {
+		return reqscopes
+	} else {
+		return &Scope{"repository", reqscopes.Name, allowedPrivileges}
+	}
+}
+
 func (h *TokenAuthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	log.Println("request ", r.RequestURI)
@@ -114,12 +128,15 @@ func (h *TokenAuthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	stringToken, err := h.CreateToken(scopes, service, account)
+	grantedActions := scopeAllowed(scopes, userdata)
+
+	stringToken, err := h.CreateToken(grantedActions, service, account)
 	if err != nil {
 		log.Printf("string error %s\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
 	// All it's ok, so get the good news back
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
@@ -135,6 +152,7 @@ func (h *TokenAuthHandler) authAccount(req *http.Request, account string) (*Vaul
 		vaultClient := VaultClient{&h.Config.Storage.Vault}
 		vuser, err := vaultClient.RetrieveUser(user)
 		if err != nil {
+			log.Print(err)
 			return nil, err
 		}
 		log.Printf("%#v", vuser)
