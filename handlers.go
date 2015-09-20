@@ -98,7 +98,7 @@ func (h *TokenAuthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	service, err := h.getService(r)
 	if err != nil {
 		log.Print(err)
-		http.Error(w, err.Error(), err.(*HttpAuthError).Code)
+		http.Error(w, err.Error(), err.(*HTTPAuthError).Code)
 		return
 	}
 	//	log.Print("DEBUG",service)
@@ -108,7 +108,7 @@ func (h *TokenAuthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		// log.Printf("DEBUG getScopes error %s\n", err)
 		if account == "" {
-			http.Error(w, err.Error(), err.(*HttpAuthError).Code)
+			http.Error(w, err.Error(), err.(*HTTPAuthError).Code)
 			return
 		} else {
 			scopes = &Scope{}
@@ -118,7 +118,7 @@ func (h *TokenAuthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	userdata, err := h.authAccount(r, account)
 	if err != nil {
-		http.Error(w, err.Error(), err.(*HttpAuthError).Code)
+		http.Error(w, err.Error(), err.(*HTTPAuthError).Code)
 		return
 	}
 	if userdata == nil {
@@ -144,7 +144,7 @@ func (h *TokenAuthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (h *TokenAuthHandler) authAccount(req *http.Request, account string) (*VaultUser, error) {
 	user, pass, haveAuth := req.BasicAuth()
 	if account != "" && user != account {
-		return nil, HttpBadRequest("authoziration failue. account and user passed are diffrent.")
+		return nil, HTTPBadRequest("authoziration failue. account and user passed are diffrent.")
 	}
 	if haveAuth {
 		vaultClient := VaultClient{&h.Config.Storage.Vault}
@@ -160,14 +160,14 @@ func (h *TokenAuthHandler) authAccount(req *http.Request, account string) (*Vaul
 			return nil, nil
 		}
 	} else {
-		return nil, ErrorUnauthorized
+		return nil, ErrUnauthorized
 	}
 }
 
 func (h *TokenAuthHandler) getService(req *http.Request) (string, error) {
 	service := req.FormValue("service")
 	if service == "" {
-		return "", HttpBadRequest("missing service from the request.")
+		return "", HTTPBadRequest("missing service from the request.")
 	}
 	return service, nil
 }
@@ -176,21 +176,21 @@ func (h *TokenAuthHandler) getService(req *http.Request) (string, error) {
 func (h *TokenAuthHandler) getScopes(req *http.Request) (*Scope, error) {
 	scope := req.FormValue("scope")
 	if scope == "" {
-		return nil, HttpBadRequest("missing scope")
+		return nil, HTTPBadRequest("missing scope")
 	}
 
 	if len(strings.Split(scope, ":")) != 3 {
-		return nil, HttpBadRequest("malformed scope")
+		return nil, HTTPBadRequest("malformed scope")
 	}
 
 	getscope := strings.Split(scope, ":")
 	if getscope[0] != "repository" {
-		return nil, HttpBadRequest("malformed scope: 'repository' not specified")
+		return nil, HTTPBadRequest("malformed scope: 'repository' not specified")
 	}
 
 	p := NewPrivilege(getscope[2])
 	if !p.Valid() {
-		return nil, HttpBadRequest("malformed scope: invalid privilege")
+		return nil, HTTPBadRequest("malformed scope: invalid privilege")
 	}
 
 	return &Scope{

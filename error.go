@@ -5,32 +5,32 @@ import (
 	"net/http"
 )
 
-type HttpAuthError struct {
-	error string
+type HTTPAuthError struct {
+	err string
 	Code  int
 }
 
 // Predefined internal error
-var ErrorUnauthorized *HttpAuthError = NewHttpError("Unauthorized Access", http.StatusUnauthorized)
-var ErrorForbidden *HttpAuthError = NewHttpError("Forbiden Access", http.StatusForbidden)
-var ErrorInternal *HttpAuthError = NewHttpError("Internal server error", http.StatusInternalServerError)
+var ErrUnauthorized *HTTPAuthError = NewHTTPError("Unauthorized Access", http.StatusUnauthorized)
+var ErrForbidden *HTTPAuthError = NewHTTPError("Forbiden Access", http.StatusForbidden)
+var ErrInternal *HTTPAuthError = NewHTTPError("Internal server error", http.StatusInternalServerError)
 
-// HttpBadRequest returns *HttpError with supplied informative string and error code 400.
-func HttpBadRequest(error string) (err *HttpAuthError) {
-	return NewHttpError(error, http.StatusBadRequest)
+// HTTPBadRequest returns *HttpError with supplied informative string and error code 400.
+func HTTPBadRequest(s string) (err *HTTPAuthError) {
+	return NewHTTPError(s, http.StatusBadRequest)
 }
 
-// NewHttpError creates new HttpError with supplied error message and code.
+// NewHTTPError creates new HttpError with supplied error message and code.
 // The message is displayed to the end user, so please be careful.
-func NewHttpError(error string, code int) (err *HttpAuthError) {
-	return &HttpAuthError{error, code}
+func NewHTTPError(s string, code int) (err *HTTPAuthError) {
+	return &HTTPAuthError{s, code}
 }
 
-func (e HttpAuthError) Error() string {
-	return fmt.Sprintf("%d: %v", e.Code, e.error)
+func (e HTTPAuthError) Error() string {
+	return fmt.Sprintf("%d: %v", e.Code, e.err)
 }
 
 // Respond sends the error code and message to the supplied ResponseWriter
-func (e *HttpAuthError) Respond(w http.ResponseWriter) {
-	http.Error(w, e.error, e.Code)
+func (e *HTTPAuthError) Respond(w http.ResponseWriter) {
+	http.Error(w, e.err, e.Code)
 }

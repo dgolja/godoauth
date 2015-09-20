@@ -21,14 +21,14 @@ type VaultUser struct {
 
 //RetrieveUser simple retrieve option for POC
 //BUG(dejan) We need to add some context and potentiall a pool of clients
-func (c *VaultClient) RetrieveUser(namespace, user string) (*VaultUser, *HttpAuthError) {
+func (c *VaultClient) RetrieveUser(namespace, user string) (*VaultUser, *HTTPAuthError) {
 
 	config := api.DefaultConfig()
 	config.Address = c.Config.Proto + "://" + c.Config.Host + ":" + strconv.Itoa(c.Config.Port)
 	client, err := api.NewClient(config)
 	if err != nil {
 		log.Printf("error creating client: %v", err)
-		return nil, ErrorInternal
+		return nil, ErrInternal
 	}
 	client.SetToken(c.Config.AuthToken)
 	req := client.NewRequest("GET", "/v1/"+namespace+"/"+user)
@@ -43,14 +43,14 @@ func (c *VaultClient) RetrieveUser(namespace, user string) (*VaultUser, *HttpAut
 			switch resp.StatusCode {
 			case 403:
 				log.Print("DEBUG error vault token does not have enough permissions")
-				return nil, ErrorInternal
+				return nil, ErrInternal
 			case 404:
-				return nil, ErrorForbidden
+				return nil, ErrForbidden
 			default:
-				return nil, NewHttpError(err.Error(), resp.StatusCode)
+				return nil, NewHTTPError(err.Error(), resp.StatusCode)
 			}
 		}
-		return nil, ErrorInternal
+		return nil, ErrInternal
 	}
 
 	// fmt.Printf("%v\n", resp)
@@ -65,7 +65,7 @@ func (c *VaultClient) RetrieveUser(namespace, user string) (*VaultUser, *HttpAut
 	err = dec.Decode(&respData)
 	if err != nil {
 		log.Printf("error parsing JSON response: %v", err)
-		return nil, ErrorInternal
+		return nil, ErrInternal
 	}
 
 	accessMap := make(map[string]Privilege)
@@ -74,7 +74,7 @@ func (c *VaultClient) RetrieveUser(namespace, user string) (*VaultUser, *HttpAut
 		xx := strings.Split(x, ":")
 		if len(xx) != 3 {
 			log.Printf("expected length 3: %v", err)
-			return nil, ErrorInternal
+			return nil, ErrInternal
 		}
 		accessMap[xx[1]] = NewPrivilege(xx[2])
 	}
