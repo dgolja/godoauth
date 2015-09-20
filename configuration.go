@@ -4,11 +4,12 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"io/ioutil"
+	"strings"
+
 	"github.com/dgrijalva/jwt-go"
 	"github.com/docker/libtrust"
 	"gopkg.in/yaml.v2"
-	"io/ioutil"
-	"strings"
 )
 
 type Configuration struct {
@@ -29,8 +30,11 @@ type Storage struct {
 }
 
 type Vault struct {
-	Host string `yaml:"host"`
-	Port int    `yaml:"port"`
+	Host      string `yaml:"host"`
+	Port      int    `yaml:"port"`
+	AuthToken string `yaml:"auth_token"`
+	Proto     string `yaml:"proto"`
+	Mount     string `yaml:"mount"`
 }
 
 type ServerConf struct {
@@ -82,7 +86,6 @@ func (c *Configuration) Parse(configurationPath *string) error {
 	if alg := jwt.GetSigningMethod(sigAlg); alg == nil {
 		return fmt.Errorf("Not supported sign algorhithem: %s", sigAlg)
 	}
-
 	return nil
 }
 

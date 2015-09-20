@@ -3,22 +3,57 @@ package godoauth
 import (
 	"errors"
 	"fmt"
-	"github.com/dgrijalva/jwt-go"
 	"io/ioutil"
 	"log"
 	"math/rand"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/dgrijalva/jwt-go"
 )
 
-// define repository access states
+type Privilege uint
+
 const (
-	ILLEGAL = iota
-	PUSH
-	PULL
-	ALL_PRIV
+	PrivilegeIllegal Privilege = 0
+	PrivilegePush              = 1
+	PrivilegePull              = 2
+	PrivilegeAll               = 3 // NB: equivlant to PrivilegePush & PrivilegePull
 )
+
+func (p Privilege) Has(q Privilege) bool {
+	return (p&q == q)
+}
+
+func (p Privilege) Valid() bool {
+	return (PrivilegeIllegal < p && p <= PrivilegeAll)
+}
+
+func NewPrivilege(privilege string) Privilege {
+	switch privilege {
+	case "push":
+		return PrivilegePush
+	case "pull":
+		return PrivilegePull
+	case "push,pull", "pull,push", "*":
+		return PrivilegePush | PrivilegePull
+	default:
+		return PrivilegeIllegal
+	}
+}
+
+func (p Privilege) Actions() []string {
+	result := make([]string, 0)
+	if p.Has(PrivilegePush) {
+		result = append(result, "push")
+	}
+
+	if p.Has(PrivilegePull) {
+		result = append(result, "pull")
+	}
+	return result
+}
 
 // Holds all information required for the handler to work
 type TokenAuthHandler struct {
@@ -35,14 +70,12 @@ type TokenAuthHandler struct {
 
 // Scope definition
 type Scope struct {
-	Type    string
-	Name    string
-	Actions []string
+	Type    string    // repository
+	Name    string    // foo/bat
+	Actions Privilege // Privilege who would guess that ?
 }
 
 func (h *TokenAuthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-
-	var scopes *Scope
 
 	log.Println("request ", r.RequestURI)
 	for k, v := range r.Header {
@@ -51,9 +84,12 @@ func (h *TokenAuthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	account := r.FormValue("account")
 
-	h.Account = account
 	authenticated, err := h.authAccount(r, account)
-	if err != nil || !authenticated {
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+	if !authenticated {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
@@ -64,11 +100,11 @@ func (h *TokenAuthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	h.Service = service
 	log.Print(service)
 
-	scopes, err = h.getScopes(r)
+	scopes, err := h.getScopes(r)
 	if err != nil {
+		fmt.Println(err)
 		if account == "" {
 			log.Printf("string error %s\n", err)
 			http.Error(w, err.Error(), http.StatusBadRequest)
@@ -79,7 +115,7 @@ func (h *TokenAuthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Print(scopes)
 
-	stringToken, err := h.CreateToken(scopes)
+	stringToken, err := h.CreateToken(scopes, service, account)
 	if err != nil {
 		log.Printf("string error %s\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -92,13 +128,19 @@ func (h *TokenAuthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *TokenAuthHandler) authAccount(req *http.Request, account string) (bool, error) {
-	// BUG(dejan) always true for foo:bar until fully developed
 	user, pass, haveAuth := req.BasicAuth()
 	if haveAuth {
-		if user == "foo" && pass == "bar" {
+		vaultClient := VaultClient{&h.Config.Storage.Vault}
+		vuser, err := vaultClient.RetrieveUser(user)
+		if err != nil {
+			return false, err
+		}
+		log.Printf("%#v", vuser)
+
+		if vuser.Username == user && vuser.Password == pass {
 			return true, nil
 		} else {
-			return false, errors.New("Wrong credentials")
+			return false, nil
 		}
 	} else {
 		return false, errors.New("Authorization Header Missing")
@@ -117,19 +159,32 @@ func (h *TokenAuthHandler) getService(req *http.Request) (string, error) {
 func (h *TokenAuthHandler) getScopes(req *http.Request) (*Scope, error) {
 	scope := req.FormValue("scope")
 	if scope == "" {
-		return nil, errors.New("Scope is missing.")
+		return nil, errors.New("missing scope")
 	}
+
 	if len(strings.Split(scope, ":")) != 3 {
-		return nil, errors.New("Scope is malformed.")
+		return nil, errors.New("malformed scope")
 	}
+
 	getscope := strings.Split(scope, ":")
-	if getscope[0] != "repository" || validPrivilege(getscope[2]) == ILLEGAL {
-		return nil, errors.New("Scope is malformed..")
+	if getscope[0] != "repository" {
+		return nil, errors.New("malformed scope: 'repository' not specified")
 	}
-	return &Scope{getscope[0], getscope[1], strings.Split(getscope[2], ",")}, nil
+
+	p := NewPrivilege(getscope[2])
+	fmt.Println(p, getscope[2])
+	if !p.Valid() {
+		return nil, errors.New("malformed scope: invalid privilege")
+	}
+
+	return &Scope{
+		getscope[0],
+		getscope[1],
+		p,
+	}, nil
 }
 
-func (h *TokenAuthHandler) CreateToken(scopes *Scope) (tokenString string, err error) {
+func (h *TokenAuthHandler) CreateToken(scopes *Scope, service, account string) (tokenString string, err error) {
 	now := time.Now().Unix()
 
 	// Sign something dummy to find out which algorithm is used.
@@ -142,29 +197,24 @@ func (h *TokenAuthHandler) CreateToken(scopes *Scope) (tokenString string, err e
 	token.Header["kid"] = h.Config.Token.publicKey.KeyID()
 
 	token.Claims["iss"] = h.Config.Token.Issuer
-	token.Claims["sub"] = h.Account
-	token.Claims["aud"] = h.Service
+	token.Claims["sub"] = account
+	token.Claims["aud"] = service
 	token.Claims["exp"] = now + h.Config.Token.Expiration
 	token.Claims["nbf"] = now - 1
 	token.Claims["iat"] = now
 	token.Claims["jti"] = fmt.Sprintf("%d", rand.Int63())
 	if scopes.Type != "" {
-		token.Claims["access"] = []Scope{*scopes}
+		token.Claims["access"] = []struct {
+			Type, Name string
+			Actions    []string
+		}{{
+			scopes.Type,
+			scopes.Name,
+			scopes.Actions.Actions(),
+		},
+		}
 	}
 	f, _ := ioutil.ReadFile(h.Config.Token.Key)
 	tokenString, err = token.SignedString(f)
 	return
-}
-
-func validPrivilege(privilege string) uint {
-	switch privilege {
-	case "push":
-		return PUSH
-	case "pull":
-		return PULL
-	case "push,pull", "pull,push":
-		return ALL_PRIV
-	default:
-		return ILLEGAL
-	}
 }
