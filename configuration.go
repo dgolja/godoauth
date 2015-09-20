@@ -30,7 +30,7 @@ type Storage struct {
 
 type Vault struct {
 	Host string `yaml:"host"`
-	Port int    `yaml:port"`
+	Port int    `yaml:"port"`
 }
 
 type ServerConf struct {
@@ -43,14 +43,14 @@ type ServerConf struct {
 }
 
 type ServerTls struct {
-	Certificate string `yaml:certificate,omitempty`
+	Certificate string `yaml:"certificate,omitempty"`
 	Key         string `yaml:"key,omitempty"`
 }
 
 type Token struct {
-	Issuer      string `yaml:issuer`
-	Expiration  int64  `yaml:expiration`
-	Certificate string `yaml:certificate,omitempty`
+	Issuer      string `yaml:"issuer"`
+	Expiration  int64  `yaml:"expiration"`
+	Certificate string `yaml:"certificate,omitempty"`
 	Key         string `yaml:"key,omitempty"`
 
 	publicKey  libtrust.PublicKey
