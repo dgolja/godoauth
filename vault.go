@@ -16,11 +16,11 @@ type VaultClient struct {
 type VaultUser struct {
 	Username string
 	Password string
-	Access   map[string]string
+	Access   map[string]Privilege
 }
 
 //RetrieveUser simple retrieve option for POC
-//BUG(dejan) We need to att some context
+//BUG(dejan) We need to add some context and potentiall a pool of clients
 func (c *VaultClient) RetrieveUser(user string) (*VaultUser, error) {
 
 	config := api.DefaultConfig()
@@ -51,14 +51,14 @@ func (c *VaultClient) RetrieveUser(user string) (*VaultUser, error) {
 		return nil, fmt.Errorf("error parsing JSON response: %v", err)
 	}
 
-	accessMap := make(map[string]string)
+	accessMap := make(map[string]Privilege)
 	semiColonSplit := strings.Split(respData.Data.Access, ";")
 	for _, x := range semiColonSplit {
 		xx := strings.Split(x, ":")
 		if len(xx) != 3 {
 			return nil, fmt.Errorf("expected length 3: %v", x)
 		}
-		accessMap[xx[1]] = xx[2]
+		accessMap[xx[1]] = NewPrivilege(xx[2])
 	}
 
 	return &VaultUser{

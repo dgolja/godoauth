@@ -82,18 +82,6 @@ func (h *TokenAuthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		log.Println("Header:", k, "Value:", v)
 	}
 
-	account := r.FormValue("account")
-
-	authenticated, err := h.authAccount(r, account)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
-		return
-	}
-	if !authenticated {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
-		return
-	}
-
 	service, err := h.getService(r)
 	if err != nil {
 		log.Print(err)
@@ -102,6 +90,7 @@ func (h *TokenAuthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Print(service)
 
+	account := r.FormValue("account")
 	scopes, err := h.getScopes(r)
 	if err != nil {
 		fmt.Println(err)
@@ -113,7 +102,17 @@ func (h *TokenAuthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			scopes = &Scope{}
 		}
 	}
-	log.Print(scopes)
+	log.Printf("%#v", scopes)
+
+	userdata, err := h.authAccount(r, account)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+	if userdata == nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
 
 	stringToken, err := h.CreateToken(scopes, service, account)
 	if err != nil {
@@ -121,36 +120,39 @@ func (h *TokenAuthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	// All it's ok get the good news back
+	// All it's ok, so get the good news back
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
 	w.Write([]byte("{\"token\": \"" + stringToken + "\"}"))
 }
 
-func (h *TokenAuthHandler) authAccount(req *http.Request, account string) (bool, error) {
+func (h *TokenAuthHandler) authAccount(req *http.Request, account string) (*VaultUser, error) {
 	user, pass, haveAuth := req.BasicAuth()
+	if account != "" && user != account {
+		return nil, errors.New("authoziration failue. account and user passed are diffrent.")
+	}
 	if haveAuth {
 		vaultClient := VaultClient{&h.Config.Storage.Vault}
 		vuser, err := vaultClient.RetrieveUser(user)
 		if err != nil {
-			return false, err
+			return nil, err
 		}
 		log.Printf("%#v", vuser)
 
 		if vuser.Username == user && vuser.Password == pass {
-			return true, nil
+			return vuser, nil
 		} else {
-			return false, nil
+			return nil, nil
 		}
 	} else {
-		return false, errors.New("Authorization Header Missing")
+		return nil, errors.New("authorization header is missing. No public access for now")
 	}
 }
 
 func (h *TokenAuthHandler) getService(req *http.Request) (string, error) {
 	service := req.FormValue("service")
 	if service == "" {
-		return "", errors.New("Failed to retrieve service from the request")
+		return "", errors.New("missing service from the request.")
 	}
 	return service, nil
 }
