@@ -12,7 +12,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-type Configuration struct {
+type Config struct {
 	Version string     `yaml:"version,omitempty"`
 	Log     Log        `yaml:"log,omitempty"`
 	Storage Storage    `yaml:"storage,omitempty"`
@@ -60,7 +60,7 @@ type Token struct {
 	privateKey libtrust.PrivateKey
 }
 
-func (c *Configuration) Parse(path string) error {
+func (c *Config) Parse(path string) error {
 	b, err := ioutil.ReadFile(path)
 	if err != nil {
 		return err
@@ -87,7 +87,7 @@ func (c *Configuration) Parse(path string) error {
 	return nil
 }
 
-func (c *Configuration) loadCerts(certFile, keyFile string) (pk libtrust.PublicKey, prk libtrust.PrivateKey, err error) {
+func (c *Config) loadCerts(certFile, keyFile string) (pk libtrust.PublicKey, prk libtrust.PrivateKey, err error) {
 	certificate, err := tls.LoadX509KeyPair(certFile, keyFile)
 	if err != nil {
 		return

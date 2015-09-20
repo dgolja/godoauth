@@ -18,11 +18,11 @@ type Server struct {
 	// used for proper graceful closing TODO
 	closing chan struct{}
 	// main Auth config file
-	Config *Configuration
+	Config *Config
 }
 
 // NewServer returns a new instance of Server built from a config.
-func NewServer(c *Configuration) (*Server, error) {
+func NewServer(c *Config) (*Server, error) {
 	// BUG(dejan) add support to write logs to a text file
 	//	if c.Log.File != "" {
 	//		// BUG(dejan): Implement file handler

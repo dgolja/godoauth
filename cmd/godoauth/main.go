@@ -39,7 +39,7 @@ func main() {
 		return
 	}
 
-	var config godoauth.Configuration
+	var config godoauth.Config
 	if err := config.Parse(confFile); err != nil {
 		fmt.Fprintln(os.Stderr, "error parsing config file: ", err)
 		os.Exit(1)

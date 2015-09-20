@@ -60,7 +60,7 @@ type TokenAuthHandler struct {
 	// we will use that later on for valut
 	Client *http.Client
 	// Main config file ... similar as in the server handler
-	Config *Configuration
+	Config *Config
 	// Account name of the user
 	Account string
 	// Service identifier ... One Auth server may be source of true for different services
