@@ -13,12 +13,18 @@ Requirements:
  * [Docker 1.6+](https://www.docker.com)
  * [Go 1.4+](https://www.golang.org) (only tested on 1.5.1)
 
-To start the Go Docker Authentication Service:
+If you haven't setup Go before, you need to first [install Go](https://golang.org/doc/install) and set a `GOPATH` (see [https://golang.org/doc/code.html#GOPATH](https://golang.org/doc/code.html#GOPATH)).
+
+```bash
+go get -u -f -t github.com/n1tr0g/...
+```
+
+This will fetch the code and build the command line tools into `$GOPATH/bin` (assumed to be in your `PATH` already). To start the Go Docker Authentication Service:
 
     docker run -d -p 5002:5002 --restart=always --name godoauth \
       -v `pwd`/config:/etc/docker/godoauth golja/godoauth
 
-### Configuration
+## Configuration
 
 Configuration is specified in a [YAML file](https://en.wikipedia.org/wiki/YAML) which can be set using the (`-config` option).
 
@@ -47,7 +53,7 @@ Configuration is specified in a [YAML file](https://en.wikipedia.org/wiki/YAML) 
 
 In some instances a configuration option is **optional**
 
-#### Version
+### Version
 
     version: 0.1
 
@@ -55,7 +61,7 @@ The `version` option is **optional**. It specifies the configuration's version.
 It is expected to remain a top-level field, to allow for a consistent version
 check before parsing the remainder of the configuration file.
 
-#### log
+### log
 
 The `log` subsection is **optional** and configures the behavior of the logging system. 
 The logging system outputs everything to stdout. You can adjust the granularity and format
@@ -97,7 +103,7 @@ with this configuration section.
   </tr>
 </table>
 
-#### storage
+### storage
 
 The `storage` subsection is **required** and it configures the data backend. Currently only `vault` is supported, but this may change in the future.
 
@@ -108,7 +114,7 @@ The `storage` subsection is **required** and it configures the data backend. Cur
         port: 8200
         auth_token: dbXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXX
 
-##### vault
+#### vault
 
 <table>
   <tr>
@@ -165,7 +171,7 @@ The `storage` subsection is **required** and it configures the data backend. Cur
 </table>
 
 
-#### http
+### http
 
 The `http` option contains the config for the HTTP(S) server that
 hosts token authentication.
@@ -207,7 +213,7 @@ hosts token authentication.
   </tr>
 </table>
 
-##### tls
+#### tls
 
 The `tls` struct within `http` is **optional** and is used setup TLS
 for the server.
@@ -242,7 +248,7 @@ for the server.
   </tr>
 </table>
 
-#### token
+### token
 
 The `token` subsection is **required** and contains the JWT token specific options.
 
@@ -310,7 +316,7 @@ The `token` subsection is **required** and contains the JWT token specific optio
 
 If you want to contribute to `godoauth` you will need the latest Docker, Vault and a working Go environment.
 
-### Create dev SSL certs
+### Create Development SSL Certificates
 
 ```bash
 openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout server.key -out server.pem
@@ -320,9 +326,9 @@ cp server.pem server.key certs
 
 **NOTE**: If you plan to test godoauth on a different host you will need a properly signed SSL or you must add ```--insecure-registry private.registry.io:5000``` to the docker daemon parameters.
 
-### Registry v2
+## Docker Registry v2
 
-On your docker host start Registry v2
+On your Docker host start Registry v2
 
 ```
 docker run -d -p 5000:5000 --restart=always --name registry \
@@ -368,18 +374,6 @@ vault write registry/foo password=bar access="repository:linux/app:*;repository:
 This will add the user *foo* with password *bar* to the registry service with full access to
 `linux/app` image and pull permission to `linux/db` image.
 
-
-### godoath
-
-#### Build and Test
-
-If you haven't setup Go before, you need to first [install Go](https://golang.org/doc/install) and set a `GOPATH` (see [https://golang.org/doc/code.html#GOPATH](https://golang.org/doc/code.html#GOPATH)).
-
-```bash
-go get -u -f -t github.com/n1tr0g/...
-```
-
-This will fetch the code and build the command line tools into `$GOPATH/bin` (assumed to be in your `PATH` already).
 
 ## License
 
