@@ -272,7 +272,7 @@ The `token` subsection is **required** and contains the JWT token specific optio
       yes
     </td>
     <td>
-       Issuer of the token. This value *must* be the same on the registry. Usually
+       Issuer of the token. This value <b>must</b> be the same on the registry. Usually
        you pass it as REGISTRY_AUTH_TOKEN_ISSUER=Issuer
     </td>
   </tr>
