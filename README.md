@@ -1,7 +1,5 @@
 # godoauth - Go Docker Token Auth Config
 
-## Intro
-
 Godoauth is a  [token authenticator](https://github.com/docker/distribution/blob/master/docs/spec/auth/token.md) (introduced in registry v2) which uses [Vault](https://www.vaultproject.io/) as a backend, developed as part of the Docker Global Hack Day #3 in Sydney.
 
 The new [token auth](https://github.com/docker/distribution/blob/master/docs/spec/auth/token.md) allows for fine-grained access control for private registries, especially important in large teams when many different projects share a registry.
