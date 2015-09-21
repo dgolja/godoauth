@@ -95,7 +95,7 @@ with this configuration section.
       no
     </td>
     <td>
-      Sets logging file. TODOD
+      Sets logging file. TODO
     </td>
   </tr>
 </table>
@@ -315,7 +315,7 @@ If you want to try godoauth you will need the last Docker, vault and a working g
 
 ### Create dev SSL certs
 
-```
+```bash
 openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout server.key -out server.pem
 mkdir certs
 cp server.pem server.key certs
