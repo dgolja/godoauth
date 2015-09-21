@@ -31,18 +31,19 @@ func (c *VaultClient) RetrieveUser(namespace, user string) (*VaultUser, *HTTPAut
 		return nil, ErrInternal
 	}
 	client.SetToken(c.Config.AuthToken)
-	req := client.NewRequest("GET", "/v1/"+namespace+"/"+user)
+	url := "/v1/" + namespace + "/" + user
+	req := client.NewRequest("GET", url)
 	resp, err := client.RawRequest(req)
 	if err != nil {
-		log.Printf("DEBUG error calling vault API - %v", err)
+		//log.Printf("DEBUG error calling vault API - %v", err)
 		if resp != nil {
-			log.Printf("DEBUG error code: %d", resp.StatusCode)
+			log.Printf("error while retrieving vault data: %s with code: %d", url, resp.StatusCode)
 			// that means we don't have access to this resource
 			// so we should log an error but response to client
 			// that he has no access
 			switch resp.StatusCode {
 			case 403:
-				log.Print("DEBUG error vault token does not have enough permissions")
+				// log.Print("DEBUG error vault token does not have enough permissions")
 				return nil, ErrInternal
 			case 404:
 				return nil, ErrForbidden
@@ -50,6 +51,7 @@ func (c *VaultClient) RetrieveUser(namespace, user string) (*VaultUser, *HTTPAut
 				return nil, NewHTTPError(err.Error(), resp.StatusCode)
 			}
 		}
+		log.Print(err)
 		return nil, ErrInternal
 	}
 

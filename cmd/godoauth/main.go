@@ -12,7 +12,7 @@ import (
 
 var (
 	name    string = "Go Docker Token Authenticator - godoauth"
-	version string = "0.0.1"
+	version string = "v0.0.1"
 	commit  string
 )
 

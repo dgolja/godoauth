@@ -152,7 +152,7 @@ func (h *TokenAuthHandler) authAccount(req *http.Request, account string) (*Vaul
 		if err != nil {
 			return nil, err
 		}
-		log.Printf("DEBUG %#v", vuser)
+		//		log.Printf("DEBUG %#v", vuser)
 
 		if vuser.Username == user && vuser.Password == pass {
 			return vuser, nil
