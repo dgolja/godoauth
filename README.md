@@ -1,4 +1,4 @@
-# godoauth - Go Docker Token Auth Config
+# godoauth - Go Docker Token Auth Service
 
 Godoauth is a [token authenticator](https://github.com/docker/distribution/blob/master/docs/spec/auth/token.md) (introduced in Docker Registry v2) which uses [Vault](https://www.vaultproject.io/) as a backend, developed as part of the Docker Global Hack Day #3 in Sydney.
 
@@ -362,7 +362,7 @@ vault server -devel
 #### Create service mount point
 
 ```
-./vault mount -path registry generic
+vault mount -path registry generic
 ```
 
 The path mount point must match the service name defined in the registry above. The auth service has been designed to support multiple private registries, simply add another mount point in vault with corresponding users.
@@ -376,6 +376,12 @@ vault write registry/foo password=bar access="repository:linux/app:*;repository:
 This will add the user *foo* with password *bar* to the registry service with full access to
 `linux/app` image and pull permission to `linux/db` image.
 
+
+## TODO
+
+ * Add more testing
+ * Add support for connection pools
+ * More different backends
 
 ## License
 
