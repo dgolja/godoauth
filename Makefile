@@ -11,7 +11,7 @@ ifeq (${DISABLE_OPTIMIZATION},true)
 	VERSION:="$(VERSION)-noopt"
 endif
 
-GO_LDFLAGS=-ldflags "-X main.version $(VERSION)"
+GO_LDFLAGS=-ldflags "-X main.version=$(VERSION)"
 
 .PHONY: clean all fmt vet lint build test bin
 .DEFAULT: default
