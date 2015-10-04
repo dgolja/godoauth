@@ -10,6 +10,7 @@ storage:
     host: 127.0.0.1
     port: 8200
     auth_token: dbXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXX
+    timeout: 3s
 http:
   timeout: 5s
   addr: :5002

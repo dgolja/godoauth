@@ -115,6 +115,7 @@ The `storage` subsection is **required** and it configures the data backend. Cur
         host: 127.0.0.1
         port: 8200
         auth_token: dbXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXX
+        timeout: 3s
 
 #### vault
 
@@ -168,6 +169,17 @@ The `storage` subsection is **required** and it configures the data backend. Cur
     <td>
       Vault authentication token used to connect to vault server. Usually generated
       via vault token-create
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <code>timeout</code>
+    </td>
+    <td>
+      no
+    </td>
+    <td>
+      timeout for the communicatiob between godoauth and vault server. Default: 3s
     </td>
   </tr>
 </table>
