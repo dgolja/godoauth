@@ -2,13 +2,12 @@ package godoauth
 
 import "net/http"
 
-// TODO: Implement graceful shutdown?
-type Server struct {
+type Handler struct {
 	*http.ServeMux
 }
 
-// NewServer returns a new instance of Server built from a config.
-func NewServer(authHandler *TokenAuthHandler) *Server {
+// NewHandler returns a new instance of Handler built from a config.
+func NewHandler(authHandler *TokenAuthHandler) *Handler {
 	// BUG(dejan) add support to write logs to a text file
 	//	if c.Log.File != "" {
 	//		// BUG(dejan): Implement file handler
@@ -16,7 +15,7 @@ func NewServer(authHandler *TokenAuthHandler) *Server {
 	//	} else {
 	//		s.Handler = handlers.CombinedLoggingHandler(os.Stdout, s.Handler)
 	//	}
-	s := &Server{
+	s := &Handler{
 		ServeMux: http.NewServeMux(),
 	}
 
@@ -26,7 +25,7 @@ func NewServer(authHandler *TokenAuthHandler) *Server {
 }
 
 // ping is an health check handler, so we can use ELB/HA proxy health check
-func (Server) ping(w http.ResponseWriter, r *http.Request) {
+func (Handler) ping(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Write([]byte("{\"message\": \"Save the Whales !\"}\n\r"))
 }

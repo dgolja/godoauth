@@ -7,8 +7,8 @@ import (
 	"testing"
 )
 
-func TestServerPing(t *testing.T) {
-	s := NewServer(nil)
+func TestHandlerPing(t *testing.T) {
+	s := NewHandler(nil)
 
 	request, err := http.NewRequest("GET", "/server-ping", nil)
 	if err != nil {

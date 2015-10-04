@@ -63,7 +63,7 @@ func main() {
 
 	server := &http.Server{
 		Addr:        config.HTTP.Addr,
-		Handler:     godoauth.NewServer(authHandler),
+		Handler:     godoauth.NewHandler(authHandler),
 		ReadTimeout: timeout,
 	}
 
