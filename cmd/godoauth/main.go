@@ -57,9 +57,13 @@ func main() {
 		return
 	}
 
+	authHandler := &godoauth.TokenAuthHandler{
+		Config: &config,
+	}
+
 	server := &http.Server{
 		Addr:        config.HTTP.Addr,
-		Handler:     godoauth.NewServer(&config),
+		Handler:     godoauth.NewServer(authHandler),
 		ReadTimeout: timeout,
 	}
 

@@ -5,13 +5,10 @@ import "net/http"
 // TODO: Implement graceful shutdown?
 type Server struct {
 	*http.ServeMux
-
-	// main Auth config file
-	Config *Config
 }
 
 // NewServer returns a new instance of Server built from a config.
-func NewServer(c *Config) *Server {
+func NewServer(authHandler *TokenAuthHandler) *Server {
 	// BUG(dejan) add support to write logs to a text file
 	//	if c.Log.File != "" {
 	//		// BUG(dejan): Implement file handler
@@ -21,16 +18,10 @@ func NewServer(c *Config) *Server {
 	//	}
 	s := &Server{
 		ServeMux: http.NewServeMux(),
-		Config:   c,
-	}
-
-	authHandler := &TokenAuthHandler{
-		Config: c,
 	}
 
 	s.Handle("/auth", authHandler)
 	s.HandleFunc("/server-ping", s.ping)
-
 	return s
 }
 
