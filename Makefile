@@ -42,6 +42,7 @@ lint:
 dep:
 	@echo "+ $@"
 	go get -v ./...
+
 build:
 	@echo "+ $@"
 	@go build -tags "${DOCKER_BUILDTAGS}" -v ${GO_LDFLAGS} ./...

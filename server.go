@@ -14,8 +14,9 @@ type Server struct {
 	Server   http.Server
 	Listener net.Listener
 	Handler  http.Handler
-	// used for proper graceful closing TODO
+	// used for proper graceful closing
 	closing chan struct{}
+	Closed  chan struct{}
 	// main Auth config file
 	Config *Config
 }
@@ -66,6 +67,7 @@ func NewServer(c *Config) (*Server, error) {
 
 	return &Server{
 		closing:  make(chan struct{}),
+		Closed:   make(chan struct{}),
 		Config:   c,
 		Handler:  mux,
 		Listener: l,
@@ -81,14 +83,22 @@ func serverPing(w http.ResponseWriter, r *http.Request) {
 //Start the Token Authentication server
 func (s *Server) Start() {
 	go func() {
-		defer s.Listener.Close()
 		timeout, _ := time.ParseDuration(s.Config.HTTP.Timeout)
 		s.Server = http.Server{
 			Handler:     s.Handler,
 			ReadTimeout: timeout,
 		}
 		if err := s.Server.Serve(s.Listener); err != nil {
-			log.Panic("Server: ", err)
+			log.Println("server: ", err)
 		}
 	}()
+}
+
+func (s *Server) Close() error {
+	defer close(s.Closed)
+	if s.Listener != nil {
+		s.Listener.Close()
+	}
+	close(s.closing)
+	return nil
 }

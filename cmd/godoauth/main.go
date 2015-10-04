@@ -3,9 +3,11 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/n1tr0g/godoauth"
 )
@@ -61,5 +63,23 @@ func main() {
 	// waiting for a termination signal to clean up
 	interruptChan := make(chan os.Signal)
 	signal.Notify(interruptChan, os.Interrupt, syscall.SIGTERM, syscall.SIGHUP)
-	<-interruptChan
+
+	// Block until one of the signals above is received
+	select {
+	case <-interruptChan:
+		log.Println("Signal received, initializing clean shutdown...")
+		go func() {
+			server.Close()
+		}()
+	}
+
+	log.Println("Waiting for clean shutdown...")
+	select {
+	case <-interruptChan:
+		log.Println("second signal received, initializing hard shutdown")
+	case <-time.After(time.Second * 30):
+		log.Println("time limit reached, initializing hard shutdown")
+	case <-server.Closed:
+		log.Println("server shutdown completed")
+	}
 }
