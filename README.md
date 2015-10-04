@@ -1,4 +1,5 @@
 # godoauth - Go Docker Token Auth Service
+[![Build Status](https://travis-ci.org/n1tr0g/godoauth.svg?branch=master)](https://travis-ci.org/n1tr0g/godoauth)
 
 Godoauth is a [token authenticator](https://github.com/docker/distribution/blob/master/docs/spec/auth/token.md) (introduced in Docker Registry v2) which uses [Vault](https://www.vaultproject.io/) as a backend, developed as part of the Docker Global Hack Day #3 in Sydney.
 
