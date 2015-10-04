@@ -1,0 +1,19 @@
+language: go
+sudo: false
+go:
+  - 1.5.1
+  - tip
+env:
+  - GOARCH=amd64
+install:
+  - make dep
+script:
+  - make test
+  - make fmt
+notifications:
+  email:
+    recipients:
+      - dejan@golja.org
+matrix:
+  allow_failures:
+    - go: tip
