@@ -144,7 +144,7 @@ func (h *TokenAuthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (h *TokenAuthHandler) authAccount(req *http.Request, account string) (*VaultUser, error) {
 	user, pass, haveAuth := req.BasicAuth()
 	if account != "" && user != account {
-		return nil, HTTPBadRequest("authoziration failue. account and user passed are diffrent.")
+		return nil, HTTPBadRequest("authorisation failure: account and user are different")
 	}
 	if haveAuth {
 		vaultClient := VaultClient{&h.Config.Storage.Vault}
@@ -223,11 +223,12 @@ func (h *TokenAuthHandler) CreateToken(scopes *Scope, service, account string) (
 		token.Claims["access"] = []struct {
 			Type, Name string
 			Actions    []string
-		}{{
-			scopes.Type,
-			scopes.Name,
-			scopes.Actions.Actions(),
-		},
+		}{
+			{
+				scopes.Type,
+				scopes.Name,
+				scopes.Actions.Actions(),
+			},
 		}
 	}
 	f, _ := ioutil.ReadFile(h.Config.Token.Key)
