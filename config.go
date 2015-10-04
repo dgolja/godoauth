@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"strings"
+	"time"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/docker/libtrust"
@@ -34,6 +35,7 @@ type Vault struct {
 	Port      int    `yaml:"port"`
 	AuthToken string `yaml:"auth_token"`
 	Proto     string `yaml:"proto"`
+	Timeout   string `yaml:"timeout,omitempty"`
 }
 
 type ServerConf struct {
@@ -84,6 +86,23 @@ func (c *Config) Parse(path string) error {
 	if alg := jwt.GetSigningMethod(sigAlg); alg == nil {
 		return fmt.Errorf("signing algorithm not supported: %s", sigAlg)
 	}
+
+	if c.Storage.Vault.Timeout == "" {
+		c.Storage.Vault.Timeout = "3s"
+	} else {
+		if _, err := time.ParseDuration(c.Storage.Vault.Timeout); err != nil {
+			return err
+		}
+	}
+
+	if c.HTTP.Timeout == "" {
+		c.Storage.Vault.Timeout = "5s"
+	} else {
+		if _, err := time.ParseDuration(c.HTTP.Timeout); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
