@@ -3,15 +3,17 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/n1tr0g/godoauth"
 )
 
 var (
-	name    string = "Go Docker Token Authenticator - godoauth"
+	name    string = "godoauth - Go Docker Token Authenticator"
 	version string = "v0.0.1"
 	commit  string
 )
@@ -40,9 +42,13 @@ func main() {
 	}
 
 	var config godoauth.Config
-	if err := config.Parse(confFile); err != nil {
+	if err := config.LoadFromFile(confFile); err != nil {
 		fmt.Fprintln(os.Stderr, "error parsing config file: ", err)
 		os.Exit(1)
+	}
+
+	if err := config.LoadCerts(); err != nil {
+		fmt.Fprintln(os.Stderr, "error while loading/veryfing certs: ", err)
 	}
 
 	fmt.Printf("Starting %s version: %s\n", name, version)

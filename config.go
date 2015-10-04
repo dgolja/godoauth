@@ -4,7 +4,9 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"io"
 	"io/ioutil"
+	"os"
 	"strings"
 	"time"
 
@@ -55,36 +57,35 @@ type ServerTLS struct {
 type Token struct {
 	Issuer      string `yaml:"issuer"`
 	Expiration  int64  `yaml:"expiration"`
-	Certificate string `yaml:"certificate,omitempty"`
-	Key         string `yaml:"key,omitempty"`
+	Certificate string `yaml:"certificate"`
+	Key         string `yaml:"key"`
 
 	publicKey  libtrust.PublicKey
 	privateKey libtrust.PrivateKey
 }
 
-func (c *Config) Parse(path string) error {
-	b, err := ioutil.ReadFile(path)
+func (c *Config) LoadFromFile(path string) error {
+	fp, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	return c.Parse(fp)
+}
+
+func (c *Config) Parse(rd io.Reader) error {
+
+	in, err := ioutil.ReadAll(rd)
 	if err != nil {
 		return err
 	}
 
-	if err := yaml.Unmarshal(b, c); err != nil {
+	err = yaml.Unmarshal(in, c)
+	if err != nil {
 		return err
 	}
-	if c.Token.Certificate != "" && c.Token.Key != "" {
-		c.Token.publicKey, c.Token.privateKey, err = c.loadCerts(c.Token.Certificate, c.Token.Key)
-		if err != nil {
-			return err
-		}
-	}
-	// Sign something dummy to find out which algorithm is used.
-	_, sigAlg, err := c.Token.privateKey.Sign(strings.NewReader("whoami"), 0)
-	if err != nil {
-		return fmt.Errorf("failed to sign: %s", err)
-	}
-	// check if the library supports this sign algorithm
-	if alg := jwt.GetSigningMethod(sigAlg); alg == nil {
-		return fmt.Errorf("signing algorithm not supported: %s", sigAlg)
+
+	if c.Token.Certificate == "" || c.Token.Key == "" {
+		return fmt.Errorf("Missing Certificate or Key for the Token definition")
 	}
 
 	if c.Storage.Vault.Timeout == "" {
@@ -96,13 +97,32 @@ func (c *Config) Parse(path string) error {
 	}
 
 	if c.HTTP.Timeout == "" {
-		c.Storage.Vault.Timeout = "5s"
+		c.HTTP.Timeout = "5s"
 	} else {
 		if _, err := time.ParseDuration(c.HTTP.Timeout); err != nil {
 			return err
 		}
 	}
 
+	return nil
+}
+
+func (c *Config) LoadCerts() error {
+	var err error
+
+	c.Token.publicKey, c.Token.privateKey, err = c.loadCerts(c.Token.Certificate, c.Token.Key)
+	if err != nil {
+		return err
+	}
+	// Sign something dummy to find out which algorithm is used.
+	_, sigAlg, err := c.Token.privateKey.Sign(strings.NewReader("whoami"), 0)
+	if err != nil {
+		return fmt.Errorf("failed to sign: %s", err)
+	}
+	// check if the library supports this sign algorithm
+	if alg := jwt.GetSigningMethod(sigAlg); alg == nil {
+		return fmt.Errorf("signing algorithm not supported: %s", sigAlg)
+	}
 	return nil
 }
 
