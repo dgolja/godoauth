@@ -2,7 +2,6 @@ package godoauth
 
 import (
 	"crypto/tls"
-	"fmt"
 	"log"
 	"net"
 	"net/http"
@@ -57,15 +56,7 @@ func NewServer(c *Config) (*Server, error) {
 		log.Println("Listener on HTTP:", l.Addr().String())
 	}
 
-	clientTimeout, err := time.ParseDuration(c.HTTP.Timeout)
-	if err != nil {
-		return nil, fmt.Errorf("error parsing client timeout: %v", err)
-	}
-
 	authHandler := &TokenAuthHandler{
-		Client: &http.Client{
-			Timeout: clientTimeout,
-		},
 		Config: c,
 	}
 
@@ -91,7 +82,11 @@ func serverPing(w http.ResponseWriter, r *http.Request) {
 func (s *Server) Start() {
 	go func() {
 		defer s.Listener.Close()
-		s.Server = http.Server{Handler: s.Handler}
+		timeout, _ := time.ParseDuration(s.Config.HTTP.Timeout)
+		s.Server = http.Server{
+			Handler:     s.Handler,
+			ReadTimeout: timeout,
+		}
 		if err := s.Server.Serve(s.Listener); err != nil {
 			log.Panic("Server: ", err)
 		}
