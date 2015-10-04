@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"os/signal"
-	"syscall"
 	"time"
 
 	"github.com/n1tr0g/godoauth"
@@ -50,11 +48,6 @@ func main() {
 	if err := config.LoadCerts(); err != nil {
 		fmt.Fprintln(os.Stderr, "error while loading/veryfing certs: ", err)
 	}
-
-	// waiting for a termination signal to clean up
-	interruptChan := make(chan os.Signal)
-	signal.Notify(interruptChan, os.Interrupt, syscall.SIGTERM, syscall.SIGHUP)
-	<-interruptChan
 
 	fmt.Printf("Starting %s version: %s\n", name, version)
 
