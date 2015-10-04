@@ -3,9 +3,11 @@ package main
 import (
 	"flag"
 	"fmt"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/n1tr0g/godoauth"
 )
@@ -49,17 +51,28 @@ func main() {
 		fmt.Fprintln(os.Stderr, "error while loading/veryfing certs: ", err)
 	}
 
-	fmt.Printf("Starting %s version: %s\n", name, version)
-
-	server, err := godoauth.NewServer(&config)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "Error while creating new server: ", err)
-		os.Exit(1)
-	}
-	server.Start()
-
 	// waiting for a termination signal to clean up
 	interruptChan := make(chan os.Signal)
 	signal.Notify(interruptChan, os.Interrupt, syscall.SIGTERM, syscall.SIGHUP)
 	<-interruptChan
+
+	fmt.Printf("Starting %s version: %s\n", name, version)
+
+	timeout, err := time.ParseDuration(config.HTTP.Timeout)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "error parsing HTTP read timeout")
+		return
+	}
+
+	server := &http.Server{
+		Addr:        config.HTTP.Addr,
+		Handler:     godoauth.NewServer(&config),
+		ReadTimeout: timeout,
+	}
+
+	if config.HTTP.TLS.Certificate != "" && config.HTTP.TLS.Key != "" {
+		server.ListenAndServeTLS(config.HTTP.TLS.Certificate, config.HTTP.TLS.Key)
+		return
+	}
+	server.ListenAndServe()
 }
