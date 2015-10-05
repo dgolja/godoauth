@@ -10,6 +10,7 @@ import (
 	"time"
 
 	vaultapi "github.com/hashicorp/vault/api"
+	"golang.org/x/net/context"
 )
 
 type VaultClient struct {
@@ -47,11 +48,11 @@ func (c *VaultClient) getClient() (*vaultapi.Client, error) {
 
 //RetrieveUser retrieve username/password/acl from Vault
 //BUG(dejan) We need to add some context and potentiall a pool of clients
-func (c *VaultClient) RetrieveUser(namespace, user string) (*VaultUser, *HTTPAuthError) {
+func (c *VaultClient) RetrieveUser(ctx context.Context, namespace, user string) (*VaultUser, *HTTPAuthError) {
 
 	client, err := c.getClient()
 	if err != nil {
-		log.Printf("error creating client: %v", err)
+		log.Printf("%d error creating client: %v", ctx.Value("id"), err)
 		return nil, ErrInternal
 	}
 	url := "/v1/" + namespace + "/" + user
@@ -60,7 +61,7 @@ func (c *VaultClient) RetrieveUser(namespace, user string) (*VaultUser, *HTTPAut
 	if err != nil {
 		//log.Printf("DEBUG error calling vault API - %v", err)
 		if resp != nil {
-			log.Printf("error while retrieving vault data: %s with code: %d", url, resp.StatusCode)
+			log.Printf("%d error while retrieving vault data: %s with code: %d", ctx.Value("id"), url, resp.StatusCode)
 			// that means we don't have access to this resource in vault
 			// so we should log an error internally but responde to the client
 			// that he has no access
@@ -74,7 +75,7 @@ func (c *VaultClient) RetrieveUser(namespace, user string) (*VaultUser, *HTTPAut
 				return nil, NewHTTPError(err.Error(), resp.StatusCode)
 			}
 		}
-		log.Print(err)
+		log.Printf("%d %s", ctx.Value("id"), err)
 		return nil, ErrInternal
 	}
 
@@ -90,7 +91,7 @@ func (c *VaultClient) RetrieveUser(namespace, user string) (*VaultUser, *HTTPAut
 	dec := json.NewDecoder(resp.Body)
 	err = dec.Decode(&respData)
 	if err != nil {
-		log.Printf("error parsing JSON response: %v", err)
+		log.Printf("%d error parsing JSON response: %v", ctx.Value("id"), err)
 		return nil, ErrInternal
 	}
 
@@ -99,7 +100,7 @@ func (c *VaultClient) RetrieveUser(namespace, user string) (*VaultUser, *HTTPAut
 	for _, x := range semiColonSplit {
 		xx := strings.Split(x, ":")
 		if len(xx) != 3 {
-			log.Printf("expected length 3: %v", err)
+			log.Printf("%d expected length 3: %v", ctx.Value("id"), err)
 			return nil, ErrInternal
 		}
 		accessMap[xx[1]] = NewPriv(xx[2])

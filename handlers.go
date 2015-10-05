@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
+	"golang.org/x/net/context"
 )
 
 type Priv uint
@@ -54,11 +55,13 @@ func (p Priv) Actions() []string {
 	return result
 }
 
-// Holds all information required for the handler to work
+// TokenAuthHandler handler for the docker token request
+// Docker client will pass the following parameters in the request
+//
+// service - The name of the service which hosts the resource. (required)
+// scope - The resource in question. Can be speficied more time (required)
+// account - name of the account. Optional usually get passed only if docker login
 type TokenAuthHandler struct {
-	// The HTTP client maight be shared across multiple handlers, saving TCP connections
-	// we will use that later on for valut
-	Client *http.Client
 	// Main config file ... similar as in the server handler
 	Config *Config
 	// Account name of the user
@@ -70,67 +73,99 @@ type TokenAuthHandler struct {
 // Scope definition
 type Scope struct {
 	Type    string // repository
-	Name    string // foo/bat
+	Name    string // foo/bar
 	Actions Priv   // Priv who would guess that ?
 }
 
-func scopeAllowed(reqscopes *Scope, vuser *VaultUser) *Scope {
+// AuthRequest parse the client request
+type AuthRequest struct {
+	Service  string
+	Account  string
+	Password string
+	Scope    *Scope
+}
 
-	allowedPrivs := vuser.Access[reqscopes.Name]
-	if reqscopes.Type == "" || allowedPrivs == PrivIllegal {
+func actionAllowed(reqscopes *Scope, vuser *VaultUser) *Scope {
+
+	if reqscopes == nil {
 		return &Scope{}
 	}
+
+	allowedPrivs := vuser.Access[reqscopes.Name]
 
 	if allowedPrivs.Has(reqscopes.Actions) {
 		return reqscopes
 	} else {
-		return &Scope{"repository", reqscopes.Name, allowedPrivs}
+		return &Scope{"repository", reqscopes.Name, allowedPrivs | reqscopes.Actions}
 	}
 }
 
 func (h *TokenAuthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
-	log.Println("GET", r.RequestURI)
+	var (
+		ctx    context.Context
+		cancel context.CancelFunc
+	)
+
+	timeout, err := time.ParseDuration(h.Config.HTTP.Timeout)
+	if err == nil {
+		// The request has a timeout, so create a context that is
+		// canceled automatically when the timeout expires.
+		ctx, cancel = context.WithTimeout(context.WithValue(context.Background(), "id", rand.Int31()), timeout)
+	} else {
+		ctx, cancel = context.WithCancel(context.WithValue(context.Background(), "id", rand.Int31()))
+	}
+	defer cancel() // Cancel ctx as soon as ServeHTTP returns.
+
+	log.Println(ctx.Value("id"), "GET", r.RequestURI)
 	// for k, v := range r.Header {
 	// 	log.Println("Header:", k, "Value:", v)
 	// }
 
-	service, err := h.getService(r)
+	authRequest, err := parseRequest(r)
 	if err != nil {
-		log.Print(err)
+		log.Printf("%d %s", ctx.Value("id"), err)
 		http.Error(w, err.Error(), err.(*HTTPAuthError).Code)
 		return
 	}
-	//	log.Print("DEBUG",service)
 
-	account := r.FormValue("account")
-	scopes, err := h.getScopes(r)
-	if err != nil {
-		// log.Printf("DEBUG getScopes error %s\n", err)
-		if account == "" {
-			http.Error(w, err.Error(), err.(*HTTPAuthError).Code)
-			return
-		} else {
-			scopes = &Scope{}
-		}
+	// you need at least one of the parameter to be non empty
+	// if only account true you authenticate only
+	// if only scope true you ask for anonymous priv
+	if authRequest.Account == "" && authRequest.Scope == nil {
+		err := HTTPBadRequest("malformed scope")
+		http.Error(w, err.Error(), err.Code)
+		return
 	}
-	// log.Printf("%#v", scopes)
 
-	userdata, err := h.authAccount(r, account)
+	// BUG(dejan) we do not support anonymous images yet
+	if authRequest.Account == "" {
+		http.Error(w, "Public repos not supported yet", ErrUnauthorized.Code)
+		return
+	}
+
+	// sometimes can happen that docker client will send only
+	// account param without BasicAuth, so we need to send 401 Unauth.
+	if authRequest.Account != "" && authRequest.Password == "" {
+		http.Error(w, ErrUnauthorized.Error(), ErrUnauthorized.Code)
+		return
+	}
+
+	userdata, err := h.authAccount(ctx, authRequest)
 	if err != nil {
 		http.Error(w, err.Error(), err.(*HTTPAuthError).Code)
 		return
 	}
 	if userdata == nil {
-		http.Error(w, err.Error(), http.StatusForbidden)
+		http.Error(w, "User has no access", http.StatusForbidden)
 		return
 	}
 
-	grantedActions := scopeAllowed(scopes, userdata)
+	grantedActions := actionAllowed(authRequest.Scope, userdata)
 
-	stringToken, err := h.CreateToken(grantedActions, service, account)
+	stringToken, err := h.CreateToken(grantedActions, authRequest.Service, authRequest.Account)
 	if err != nil {
-		log.Printf("token error %s\n", err)
+		log.Printf("%d token error %s\n", ctx.Value("id"), err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -139,65 +174,21 @@ func (h *TokenAuthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(200)
 	w.Write([]byte("{\"token\": \"" + stringToken + "\"}"))
+	log.Println(ctx.Value("id"), "Auth granted")
 }
 
-func (h *TokenAuthHandler) authAccount(req *http.Request, account string) (*VaultUser, error) {
-	user, pass, haveAuth := req.BasicAuth()
-	if account != "" && user != account {
-		return nil, HTTPBadRequest("authorisation failure: account and user are different")
+func (h *TokenAuthHandler) authAccount(ctx context.Context, authRequest *AuthRequest) (*VaultUser, error) {
+	vaultClient := VaultClient{&h.Config.Storage.Vault}
+	vuser, err := vaultClient.RetrieveUser(ctx, authRequest.Service, authRequest.Account)
+	if err != nil {
+		return nil, err
 	}
-	if haveAuth {
-		vaultClient := VaultClient{&h.Config.Storage.Vault}
-		vuser, err := vaultClient.RetrieveUser(req.FormValue("service"), user)
-		if err != nil {
-			return nil, err
-		}
-		//		log.Printf("DEBUG %#v", vuser)
-
-		if vuser.Username == user && vuser.Password == pass {
-			return vuser, nil
-		} else {
-			return nil, nil
-		}
+	//		log.Printf("DEBUG %#v", vuser)
+	if vuser.Password == authRequest.Password {
+		return vuser, nil
 	} else {
-		return nil, ErrUnauthorized
+		return nil, nil
 	}
-}
-
-func (h *TokenAuthHandler) getService(req *http.Request) (string, error) {
-	service := req.FormValue("service")
-	if service == "" {
-		return "", HTTPBadRequest("missing service from the request.")
-	}
-	return service, nil
-}
-
-// getScopes will check for the scope GET paramaeter and verify if's properly formated
-func (h *TokenAuthHandler) getScopes(req *http.Request) (*Scope, error) {
-	scope := req.FormValue("scope")
-	if scope == "" {
-		return nil, HTTPBadRequest("missing scope")
-	}
-
-	if len(strings.Split(scope, ":")) != 3 {
-		return nil, HTTPBadRequest("malformed scope")
-	}
-
-	getscope := strings.Split(scope, ":")
-	if getscope[0] != "repository" {
-		return nil, HTTPBadRequest("malformed scope: 'repository' not specified")
-	}
-
-	p := NewPriv(getscope[2])
-	if !p.Valid() {
-		return nil, HTTPBadRequest("malformed scope: invalid privilege")
-	}
-
-	return &Scope{
-		getscope[0],
-		getscope[1],
-		p,
-	}, nil
 }
 
 func (h *TokenAuthHandler) CreateToken(scopes *Scope, service, account string) (tokenString string, err error) {
@@ -223,15 +214,88 @@ func (h *TokenAuthHandler) CreateToken(scopes *Scope, service, account string) (
 		token.Claims["access"] = []struct {
 			Type, Name string
 			Actions    []string
-		}{
-			{
-				scopes.Type,
-				scopes.Name,
-				scopes.Actions.Actions(),
-			},
+		}{{
+			scopes.Type,
+			scopes.Name,
+			scopes.Actions.Actions(),
+		},
 		}
 	}
 	f, _ := ioutil.ReadFile(h.Config.Token.Key)
 	tokenString, err = token.SignedString(f)
 	return
+}
+
+func getService(req *http.Request) (string, error) {
+	service := req.FormValue("service")
+	if service == "" {
+		return "", HTTPBadRequest("missing service from the request.")
+	}
+	return service, nil
+}
+
+// getScopes will check for the scope GET parameter and verify if it's properly
+// formated as specified by the Docker Token Specification
+//
+// format: repository:namespace:privileges
+// example: repository:foo/bar:push,read
+func getScopes(req *http.Request) (*Scope, error) {
+	scope := req.FormValue("scope")
+	if scope == "" {
+		return nil, nil
+	}
+	//log.Println(scope)
+
+	if len(strings.Split(scope, ":")) != 3 {
+		return nil, HTTPBadRequest("malformed scope")
+	}
+
+	getscope := strings.Split(scope, ":")
+	if getscope[0] != "repository" {
+		return nil, HTTPBadRequest("malformed scope: 'repository' not specified")
+	}
+
+	p := NewPriv(getscope[2])
+	if !p.Valid() {
+		return nil, HTTPBadRequest("malformed scope: invalid privilege")
+	}
+
+	return &Scope{
+		getscope[0],
+		getscope[1],
+		p,
+	}, nil
+}
+
+func parseRequest(req *http.Request) (*AuthRequest, error) {
+
+	service, err := getService(req)
+	if err != nil {
+		log.Print(err)
+		return nil, err
+	}
+	//log.Print("DEBUG", service)
+
+	account := req.FormValue("account")
+
+	scopes, err := getScopes(req)
+	if err != nil {
+		return nil, err
+	}
+	//log.Printf("%#v", scopes)
+
+	user, pass, haveAuth := req.BasicAuth()
+	if haveAuth {
+		if account != "" && user != account {
+			return nil, HTTPBadRequest("authorization failue. account and user passed are different.")
+		}
+		account = user
+	}
+
+	return &AuthRequest{
+		Service:  service,
+		Account:  account,
+		Password: pass,
+		Scope:    scopes,
+	}, nil
 }
