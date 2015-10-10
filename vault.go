@@ -17,12 +17,6 @@ type VaultClient struct {
 	Config *Vault
 }
 
-type VaultUser struct {
-	Username string
-	Password string
-	Access   map[string]Priv
-}
-
 // getClient create and configure vault client
 func (c *VaultClient) getClient() (*vaultapi.Client, error) {
 	timeout, _ := time.ParseDuration(c.Config.Timeout)
@@ -43,12 +37,11 @@ func (c *VaultClient) getClient() (*vaultapi.Client, error) {
 
 	cl.SetToken(c.Config.AuthToken)
 	return cl, nil
-
 }
 
 //RetrieveUser retrieve username/password/acl from Vault
 //BUG(dejan) We need to add some context and potentiall a pool of clients
-func (c *VaultClient) RetrieveUser(ctx context.Context, namespace, user string) (*VaultUser, *HTTPAuthError) {
+func (c *VaultClient) RetrieveUser(ctx context.Context, namespace, user string) (*UserInfo, *HTTPAuthError) {
 
 	client, err := c.getClient()
 	if err != nil {
@@ -106,7 +99,7 @@ func (c *VaultClient) RetrieveUser(ctx context.Context, namespace, user string) 
 		accessMap[xx[1]] = NewPriv(xx[2])
 	}
 
-	return &VaultUser{
+	return &UserInfo{
 		Username: user,
 		Password: respData.Data.Password,
 		Access:   accessMap,

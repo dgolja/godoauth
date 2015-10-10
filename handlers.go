@@ -85,7 +85,7 @@ type AuthRequest struct {
 	Scope    *Scope
 }
 
-func actionAllowed(reqscopes *Scope, vuser *VaultUser) *Scope {
+func actionAllowed(reqscopes *Scope, vuser *UserInfo) *Scope {
 
 	if reqscopes == nil {
 		return &Scope{}
@@ -177,7 +177,7 @@ func (h *TokenAuthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	log.Println(ctx.Value("id"), "Auth granted")
 }
 
-func (h *TokenAuthHandler) authAccount(ctx context.Context, authRequest *AuthRequest) (*VaultUser, error) {
+func (h *TokenAuthHandler) authAccount(ctx context.Context, authRequest *AuthRequest) (*UserInfo, error) {
 	vaultClient := VaultClient{&h.Config.Storage.Vault}
 	vuser, err := vaultClient.RetrieveUser(ctx, authRequest.Service, authRequest.Account)
 	if err != nil {
