@@ -7,6 +7,8 @@ import (
 	"os"
 	"time"
 
+	"gopkg.in/tylerb/graceful.v1"
+
 	"github.com/n1tr0g/godoauth"
 )
 
@@ -20,6 +22,8 @@ var (
 	confFile    string
 	showVersion bool
 )
+
+const shutdownTimeout = 10 * time.Second
 
 func init() {
 	flag.StringVar(&confFile, "config", "config.yaml", "Go Docker Token Auth Config file")
@@ -61,10 +65,13 @@ func main() {
 		Config: &config,
 	}
 
-	server := &http.Server{
-		Addr:        config.HTTP.Addr,
-		Handler:     godoauth.NewHandler(authHandler),
-		ReadTimeout: timeout,
+	server := &graceful.Server{
+		Timeout: shutdownTimeout,
+		Server: &http.Server{
+			Addr:        config.HTTP.Addr,
+			Handler:     godoauth.NewHandler(authHandler),
+			ReadTimeout: timeout,
+		},
 	}
 
 	if config.HTTP.TLS.Certificate != "" && config.HTTP.TLS.Key != "" {
