@@ -88,6 +88,30 @@ token:
    key: certs/server.key
 `
 
+// MinConfigYamlV0_1 is a Version 0.1 yaml document representing minimal settings
+var BrokenVaultYamlV0_1 = `
+---
+#sample config file
+version: 0.1
+log:
+  level: info
+storage:
+  vault:
+    proto: http
+    host: 127.0.0.1
+    port: port
+    auth_token: dbXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXX
+http:
+  addr: :5002
+  tls:
+    certificate: certs/server.pem
+token:
+   issuer: Token
+   expiration: 800
+   certificate: certs/server.pem
+   key: certs/server.key
+`
+
 // TestConfigParse validates that configYamlV0_1 can be parsed into a struct
 // matching configStruct
 func TestConfigParse(t *testing.T) {
@@ -123,5 +147,14 @@ func TestParseMinimalConfig(t *testing.T) {
 	}
 	if config.HTTP.Timeout != "5s" {
 		t.Fatalf("unexpected default HTTP timeout value %s", config.Storage.Vault.Timeout)
+	}
+}
+
+// TestParseIncomplete validates if broken config files file the parser
+func TestParseBrokenVaultConfig(t *testing.T) {
+	var config Config
+	err := config.Parse(bytes.NewReader([]byte(BrokenVaultYamlV0_1)))
+	if err == nil {
+		t.Fatal("Expected error while parsing config ")
 	}
 }

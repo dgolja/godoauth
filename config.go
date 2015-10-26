@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -88,6 +90,10 @@ func (c *Config) Parse(rd io.Reader) error {
 		return fmt.Errorf("Missing Certificate or Key for the Token definition")
 	}
 
+	_, err = url.Parse(c.Storage.Vault.Proto + "://" + c.Storage.Vault.Host + ":" + strconv.Itoa(c.Storage.Vault.Port))
+	if err != nil {
+		return err
+	}
 	if c.Storage.Vault.Timeout == "" {
 		c.Storage.Vault.Timeout = "3s"
 	} else {
