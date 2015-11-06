@@ -9,67 +9,70 @@ import (
 	"strings"
 	"time"
 
-	vaultapi "github.com/hashicorp/vault/api"
 	"golang.org/x/net/context"
 )
 
 type VaultClient struct {
 	Config *Vault
+	client *http.Client
 }
 
-// getClient create and configure vault client
-func (c *VaultClient) getClient() (*vaultapi.Client, error) {
-	timeout, _ := time.ParseDuration(c.Config.Timeout)
-	config := &vaultapi.Config{
-		Address: c.Config.Proto + "://" + c.Config.Host + ":" + strconv.Itoa(c.Config.Port),
-		HttpClient: &http.Client{
+var errRedirect = errors.New("redirect")
+
+// getData connect to vault backends and sends a request
+// about the user and return the http.Response with the content
+//
+// If running vault in a HA mode you may need to follow the first redirect
+// to get the data from the leader
+func (c *VaultClient) getData(ctx context.Context, namespace, user string) (*http.Response, error) {
+
+	if c.client == nil {
+		timeout, _ := time.ParseDuration(c.Config.Timeout)
+		c.client = &http.Client{
 			CheckRedirect: func(req *http.Request, via []*http.Request) error {
-				return errors.New("redirect")
+				if len(via) > 2 {
+					return errRedirect
+				} else {
+					return nil
+				}
 			},
 			Timeout: timeout,
-		},
+		}
 	}
 
-	cl, err := vaultapi.NewClient(config)
+	url := c.Config.Proto + "://" + c.Config.Host + ":" + strconv.Itoa(c.Config.Port) + "/v1/" + namespace + "/" + user
+
+	req, err := http.NewRequest("GET", url, nil)
+	req.Header.Set("X-Vault-Token", c.Config.AuthToken)
+	resp, err := c.client.Do(req)
+
 	if err != nil {
 		return nil, err
 	}
-
-	cl.SetToken(c.Config.AuthToken)
-	return cl, nil
+	return resp, nil
 }
 
 //RetrieveUser retrieve username/password/acl from Vault
 //BUG(dejan) We need to add some context and potentiall a pool of clients
 func (c *VaultClient) RetrieveUser(ctx context.Context, namespace, user string) (*UserInfo, *HTTPAuthError) {
 
-	client, err := c.getClient()
+	resp, err := c.getData(ctx, namespace, user)
+
 	if err != nil {
-		log.Printf("%d error creating client: %v", ctx.Value("id"), err)
+		log.Printf("%d error while communicating with vault server %s", ctx.Value("id"), err)
 		return nil, ErrInternal
 	}
-	url := "/v1/" + namespace + "/" + user
-	req := client.NewRequest("GET", url)
-	resp, err := client.RawRequest(req)
-	if err != nil {
-		//log.Printf("DEBUG error calling vault API - %v", err)
-		if resp != nil {
-			log.Printf("%d error while retrieving vault data: %s with code: %d", ctx.Value("id"), url, resp.StatusCode)
-			// that means we don't have access to this resource in vault
-			// so we should log an error internally but responde to the client
-			// that he has no access
-			switch resp.StatusCode {
-			case 403:
-				log.Print("DEBUG error vault token does not have enough permissions")
-				return nil, ErrInternal
-			case 404:
-				return nil, ErrForbidden
-			default:
-				return nil, NewHTTPError(err.Error(), resp.StatusCode)
-			}
+	//log.Printf("DEBUG error calling vault API - %v", err)
+	if resp.StatusCode != 200 {
+		switch resp.StatusCode {
+		case 403:
+			log.Print("DEBUG error vault token does not have enough permissions")
+			return nil, ErrInternal
+		case 404:
+			return nil, ErrForbidden
+		default:
+			return nil, NewHTTPError(err.Error(), resp.StatusCode)
 		}
-		log.Printf("%d %s", ctx.Value("id"), err)
-		return nil, ErrInternal
 	}
 
 	// fmt.Printf("%v\n", resp)

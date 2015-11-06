@@ -178,7 +178,7 @@ func (h *TokenAuthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *TokenAuthHandler) authAccount(ctx context.Context, authRequest *AuthRequest) (*UserInfo, error) {
-	vaultClient := VaultClient{&h.Config.Storage.Vault}
+	vaultClient := VaultClient{Config: &h.Config.Storage.Vault}
 	vuser, err := vaultClient.RetrieveUser(ctx, authRequest.Service, authRequest.Account)
 	if err != nil {
 		return nil, err
