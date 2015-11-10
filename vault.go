@@ -25,43 +25,38 @@ var errRedirect = errors.New("redirect")
 // If running vault in a HA mode you may need to follow the first redirect
 // to get the data from the leader
 func (c *VaultClient) getData(ctx context.Context, namespace, user string) (*http.Response, error) {
-
 	if c.client == nil {
-		timeout, _ := time.ParseDuration(c.Config.Timeout)
+		timeout, err := time.ParseDuration(c.Config.Timeout)
+		if err != nil {
+			return nil, err
+		}
+
 		c.client = &http.Client{
 			CheckRedirect: func(req *http.Request, via []*http.Request) error {
 				if len(via) > 2 {
 					return errRedirect
-				} else {
-					return nil
 				}
+				return nil
 			},
 			Timeout: timeout,
 		}
 	}
 
 	url := c.Config.Proto + "://" + c.Config.Host + ":" + strconv.Itoa(c.Config.Port) + "/v1/" + namespace + "/" + user
-
 	req, err := http.NewRequest("GET", url, nil)
 	req.Header.Set("X-Vault-Token", c.Config.AuthToken)
-	resp, err := c.client.Do(req)
-
-	if err != nil {
-		return nil, err
-	}
-	return resp, nil
+	return c.client.Do(req)
 }
 
 //RetrieveUser retrieve username/password/acl from Vault
 //BUG(dejan) We need to add some context and potentiall a pool of clients
 func (c *VaultClient) RetrieveUser(ctx context.Context, namespace, user string) (*UserInfo, *HTTPAuthError) {
-
 	resp, err := c.getData(ctx, namespace, user)
-
 	if err != nil {
 		log.Printf("%d error while communicating with vault server %s", ctx.Value("id"), err)
 		return nil, ErrInternal
 	}
+
 	//log.Printf("DEBUG error calling vault API - %v", err)
 	if resp.StatusCode != 200 {
 		switch resp.StatusCode {

@@ -86,7 +86,6 @@ type AuthRequest struct {
 }
 
 func actionAllowed(reqscopes *Scope, vuser *UserInfo) *Scope {
-
 	if reqscopes == nil {
 		return &Scope{}
 	}
@@ -95,13 +94,11 @@ func actionAllowed(reqscopes *Scope, vuser *UserInfo) *Scope {
 
 	if allowedPrivs.Has(reqscopes.Actions) {
 		return reqscopes
-	} else {
-		return &Scope{"repository", reqscopes.Name, allowedPrivs | reqscopes.Actions}
 	}
+	return &Scope{"repository", reqscopes.Name, allowedPrivs | reqscopes.Actions}
 }
 
 func (h *TokenAuthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-
 	var (
 		ctx    context.Context
 		cancel context.CancelFunc
@@ -186,14 +183,11 @@ func (h *TokenAuthHandler) authAccount(ctx context.Context, authRequest *AuthReq
 	//		log.Printf("DEBUG %#v", vuser)
 	if vuser.Password == authRequest.Password {
 		return vuser, nil
-	} else {
-		return nil, nil
 	}
+	return nil, nil
 }
 
-func (h *TokenAuthHandler) CreateToken(scopes *Scope, service, account string) (tokenString string, err error) {
-	now := time.Now().Unix()
-
+func (h *TokenAuthHandler) CreateToken(scopes *Scope, service, account string) (string, error) {
 	// Sign something dummy to find out which algorithm is used.
 	_, sigAlg, err := h.Config.Token.privateKey.Sign(strings.NewReader("whoami"), 0)
 	if err != nil {
@@ -206,24 +200,31 @@ func (h *TokenAuthHandler) CreateToken(scopes *Scope, service, account string) (
 	token.Claims["iss"] = h.Config.Token.Issuer
 	token.Claims["sub"] = account
 	token.Claims["aud"] = service
+
+	now := time.Now().Unix()
 	token.Claims["exp"] = now + h.Config.Token.Expiration
 	token.Claims["nbf"] = now - 1
 	token.Claims["iat"] = now
 	token.Claims["jti"] = fmt.Sprintf("%d", rand.Int63())
+
 	if scopes.Type != "" {
 		token.Claims["access"] = []struct {
 			Type, Name string
 			Actions    []string
-		}{{
-			scopes.Type,
-			scopes.Name,
-			scopes.Actions.Actions(),
-		},
+		}{
+			{
+				scopes.Type,
+				scopes.Name,
+				scopes.Actions.Actions(),
+			},
 		}
 	}
-	f, _ := ioutil.ReadFile(h.Config.Token.Key)
-	tokenString, err = token.SignedString(f)
-	return
+
+	f, err := ioutil.ReadFile(h.Config.Token.Key)
+	if err != nil {
+		return "", err
+	}
+	return token.SignedString(f)
 }
 
 func getService(req *http.Request) (string, error) {
@@ -268,7 +269,6 @@ func getScopes(req *http.Request) (*Scope, error) {
 }
 
 func parseRequest(req *http.Request) (*AuthRequest, error) {
-
 	service, err := getService(req)
 	if err != nil {
 		log.Print(err)

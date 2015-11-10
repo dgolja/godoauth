@@ -75,7 +75,6 @@ func (c *Config) LoadFromFile(path string) error {
 }
 
 func (c *Config) Parse(rd io.Reader) error {
-
 	in, err := ioutil.ReadAll(rd)
 	if err != nil {
 		return err
