@@ -59,7 +59,8 @@ func (d *Duration) UnmarshalText(b []byte) error {
 }
 
 type ServerConf struct {
-	Addr    string    `yaml:"addr"`
+	Addr string `yaml:"addr"`
+	// TODO(dejan): change this to use Duration.
 	Timeout string    `yaml:"timeout"`
 	TLS     ServerTLS `yaml:"tls"`
 
