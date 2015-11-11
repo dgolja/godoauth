@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"reflect"
 	"testing"
+	"time"
 )
 
 var configStruct = Config{
@@ -19,7 +20,7 @@ var configStruct = Config{
 			Proto:     "http",
 			Port:      8200,
 			AuthToken: "dbXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXX",
-			Timeout:   "3s",
+			Timeout:   time.Duration(3 * time.Second),
 		},
 	},
 	HTTP: ServerConf{
@@ -142,7 +143,7 @@ func TestParseMinimalConfig(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error while parsing config file: %s", err)
 	}
-	if config.Storage.Vault.Timeout != "3s" {
+	if config.Storage.Vault.Timeout != time.Duration(3 * time.Second) {
 		t.Fatalf("unexpected default Vault timeout value %s", config.Storage.Vault.Timeout)
 	}
 	if config.HTTP.Timeout != "5s" {
