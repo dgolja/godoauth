@@ -35,15 +35,27 @@ type Storage struct {
 }
 
 type Vault struct {
-	Host      string `yaml:"host"`
-	Port      int    `yaml:"port"`
-	AuthToken string `yaml:"auth_token"`
-	Proto     string `yaml:"proto"`
-	Timeout   string `yaml:"timeout,omitempty"`
+	Host      string        `yaml:"host"`
+	Port      int           `yaml:"port"`
+	AuthToken string        `yaml:"auth_token"`
+	Proto     string        `yaml:"proto"`
+	Timeout   time.Duration `yaml:"timeout,omitempty"`
 }
 
 func (v Vault) HostURL() string {
 	return fmt.Sprintf("%s://%s:%d", v.Proto, v.Host, v.Proto)
+}
+
+type Duration time.Duration
+
+// TODO(dejan): Setup default value when empty
+func (d *Duration) UnmarshalText(b []byte) error {
+	v, err := time.ParseDuration(string(b))
+	if err != nil {
+		return err
+	}
+	*d = Duration(v)
+	return nil
 }
 
 type ServerConf struct {
@@ -96,13 +108,6 @@ func (c *Config) Parse(rd io.Reader) error {
 	_, err = url.Parse(c.Storage.Vault.Proto + "://" + c.Storage.Vault.Host + ":" + strconv.Itoa(c.Storage.Vault.Port))
 	if err != nil {
 		return err
-	}
-	if c.Storage.Vault.Timeout == "" {
-		c.Storage.Vault.Timeout = "3s"
-	} else {
-		if _, err := time.ParseDuration(c.Storage.Vault.Timeout); err != nil {
-			return err
-		}
 	}
 
 	if c.HTTP.Timeout == "" {
