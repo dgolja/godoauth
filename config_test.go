@@ -25,7 +25,7 @@ var configStruct = Config{
 	},
 	HTTP: ServerConf{
 		Addr:    ":5002",
-		Timeout: "5s",
+		Timeout: time.Duration(5 * time.Second),
 		TLS: ServerTLS{
 			Certificate: "certs/server.pem",
 		},
@@ -147,7 +147,7 @@ func TestParseMinimalConfig(t *testing.T) {
 	if config.Storage.Vault.Timeout != time.Duration(3*time.Second) {
 		t.Fatalf("unexpected default Vault timeout value %s", config.Storage.Vault.Timeout)
 	}
-	if config.HTTP.Timeout != "5s" {
+	if config.HTTP.Timeout != time.Duration(5*time.Second) {
 		t.Fatalf("unexpected default HTTP timeout value %s", config.Storage.Vault.Timeout)
 	}
 }

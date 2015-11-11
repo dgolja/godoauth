@@ -58,10 +58,9 @@ func (d *Duration) UnmarshalText(b []byte) error {
 }
 
 type ServerConf struct {
-	Addr string `yaml:"addr"`
-	// TODO(dejan): change this to use Duration.
-	Timeout string    `yaml:"timeout"`
-	TLS     ServerTLS `yaml:"tls"`
+	Addr    string        `yaml:"addr"`
+	Timeout time.Duration `yaml:"timeout"`
+	TLS     ServerTLS     `yaml:"tls"`
 
 	publicKey  libtrust.PublicKey
 	privateKey libtrust.PrivateKey
@@ -110,16 +109,12 @@ func (c *Config) Parse(rd io.Reader) error {
 		return err
 	}
 
-	if c.Storage.Vault.Timeout == 0 {
+	if c.Storage.Vault.Timeout <= 0 {
 		c.Storage.Vault.Timeout = time.Duration(3 * time.Second)
 	}
 
-	if c.HTTP.Timeout == "" {
-		c.HTTP.Timeout = "5s"
-	} else {
-		if _, err := time.ParseDuration(c.HTTP.Timeout); err != nil {
-			return err
-		}
+	if c.HTTP.Timeout <= 0 {
+		c.HTTP.Timeout = time.Duration(5 * time.Second)
 	}
 
 	return nil

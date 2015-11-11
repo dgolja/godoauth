@@ -104,15 +104,10 @@ func (h *TokenAuthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		cancel context.CancelFunc
 	)
 
-	timeout, err := time.ParseDuration(h.Config.HTTP.Timeout)
-	if err == nil {
-		// The request has a timeout, so create a context that is
-		// canceled automatically when the timeout expires.
-		ctx, cancel = context.WithTimeout(context.WithValue(context.Background(), "id", rand.Int31()), timeout)
-	} else {
-		ctx, cancel = context.WithCancel(context.WithValue(context.Background(), "id", rand.Int31()))
-	}
-	defer cancel() // Cancel ctx as soon as ServeHTTP returns.
+	timeout := h.Config.HTTP.Timeout
+	transactionId := rand.Int31()
+	ctx, cancel = context.WithTimeout(context.WithValue(context.Background(), "id", transactionId), timeout)
+	defer cancel()
 
 	log.Println(ctx.Value("id"), "GET", r.RequestURI)
 	// for k, v := range r.Header {

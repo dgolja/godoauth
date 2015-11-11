@@ -55,12 +55,6 @@ func main() {
 
 	fmt.Printf("Starting %s version: %s\n", name, version)
 
-	timeout, err := time.ParseDuration(config.HTTP.Timeout)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "error parsing HTTP read timeout")
-		return
-	}
-
 	authHandler := &godoauth.TokenAuthHandler{
 		Config: &config,
 	}
@@ -70,7 +64,7 @@ func main() {
 		Server: &http.Server{
 			Addr:        config.HTTP.Addr,
 			Handler:     godoauth.NewHandler(authHandler),
-			ReadTimeout: timeout,
+			ReadTimeout: config.HTTP.Timeout,
 		},
 	}
 
