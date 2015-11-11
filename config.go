@@ -48,7 +48,6 @@ func (v Vault) HostURL() string {
 
 type Duration time.Duration
 
-// TODO(dejan): Setup default value when empty
 func (d *Duration) UnmarshalText(b []byte) error {
 	v, err := time.ParseDuration(string(b))
 	if err != nil {
@@ -109,6 +108,10 @@ func (c *Config) Parse(rd io.Reader) error {
 	_, err = url.Parse(c.Storage.Vault.Proto + "://" + c.Storage.Vault.Host + ":" + strconv.Itoa(c.Storage.Vault.Port))
 	if err != nil {
 		return err
+	}
+
+	if c.Storage.Vault.Timeout == 0 {
+		c.Storage.Vault.Timeout = time.Duration(3 * time.Second)
 	}
 
 	if c.HTTP.Timeout == "" {
