@@ -43,7 +43,7 @@ type Vault struct {
 }
 
 func (v Vault) HostURL() string {
-	return fmt.Sprintf("%s://%s:%d", v.Proto, v.Host, v.Proto)
+	return fmt.Sprintf("%s://%s:%d", v.Proto, v.Host, v.Port)
 }
 
 type Duration time.Duration
