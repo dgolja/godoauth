@@ -43,6 +43,9 @@ func (c *VaultClient) getData(ctx context.Context, namespace, user string) (*htt
 
 	url := c.Config.Proto + "://" + c.Config.Host + ":" + strconv.Itoa(c.Config.Port) + "/v1/" + namespace + "/" + user
 	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error creating Vault API request: %v", err)
+	}
 	req.Header.Set("X-Vault-Token", c.Config.AuthToken)
 	return c.client.Do(req)
 }
