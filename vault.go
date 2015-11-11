@@ -41,7 +41,7 @@ func (c *VaultClient) getData(ctx context.Context, namespace, user string) (*htt
 		Timeout: timeout,
 	}
 
-	url := c.Config.Proto + "://" + c.Config.Host + ":" + strconv.Itoa(c.Config.Port) + "/v1/" + namespace + "/" + user
+	url := fmt.Sprintf("%s://%s:%d/v1/%s/%s", c.Config.Proto, c.Config.Host, c.Config.Port, namespace, user)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error creating Vault API request: %v", err)
