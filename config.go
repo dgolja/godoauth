@@ -42,6 +42,10 @@ type Vault struct {
 	Timeout   string `yaml:"timeout,omitempty"`
 }
 
+func (v Vault) HostURL() string {
+	return fmt.Sprintf("%s://%s:%d", v.Proto, v.Host, v.Proto)
+}
+
 type ServerConf struct {
 	Addr    string    `yaml:"addr"`
 	Timeout string    `yaml:"timeout"`

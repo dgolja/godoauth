@@ -3,6 +3,7 @@ package godoauth
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -41,7 +42,7 @@ func (c *VaultClient) getData(ctx context.Context, namespace, user string) (*htt
 		Timeout: timeout,
 	}
 
-	url := fmt.Sprintf("%s://%s:%d/v1/%s/%s", c.Config.Proto, c.Config.Host, c.Config.Port, namespace, user)
+	url := fmt.Sprintf("%s/v1/%s/%s", c.Config.HostURL(), namespace, user)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error creating Vault API request: %v", err)
