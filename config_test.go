@@ -143,6 +143,7 @@ func TestParseMinimalConfig(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error while parsing config file: %s", err)
 	}
+	// TODO(dejan): Fix the default value setting for Timeout.
 	if config.Storage.Vault.Timeout != time.Duration(3 * time.Second) {
 		t.Fatalf("unexpected default Vault timeout value %s", config.Storage.Vault.Timeout)
 	}
