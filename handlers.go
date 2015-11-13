@@ -269,7 +269,6 @@ func parseRequest(req *http.Request) (*AuthRequest, error) {
 		log.Print(err)
 		return nil, err
 	}
-	//log.Print("DEBUG", service)
 
 	account := req.FormValue("account")
 
@@ -277,7 +276,6 @@ func parseRequest(req *http.Request) (*AuthRequest, error) {
 	if err != nil {
 		return nil, err
 	}
-	//log.Printf("%#v", scopes)
 
 	user, pass, haveAuth := req.BasicAuth()
 	if haveAuth {
