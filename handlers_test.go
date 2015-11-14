@@ -33,7 +33,7 @@ func TestParseRequest(t *testing.T) {
 		t.Fatalf("Expected empty password, but received %s", res.Password)
 	}
 	if res.Scope != nil {
-		t.Fatalf("Expected empty scope, but received %s", res.Scope)
+		t.Fatalf("Expected empty scope, but received %v", res.Scope)
 	}
 
 	req, _ = http.NewRequest("GET", "/?service=registry?account=foo", nil)
