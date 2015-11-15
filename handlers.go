@@ -99,14 +99,9 @@ func actionAllowed(reqscopes *Scope, vuser *UserInfo) *Scope {
 }
 
 func (h *TokenAuthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	var (
-		ctx    context.Context
-		cancel context.CancelFunc
-	)
-
 	timeout := h.Config.HTTP.Timeout
 	transactionId := rand.Int31()
-	ctx, cancel = context.WithTimeout(context.WithValue(context.Background(), "id", transactionId), timeout)
+	ctx, cancel := context.WithTimeout(context.WithValue(context.Background(), "id", transactionId), timeout)
 	defer cancel()
 
 	log.Println(ctx.Value("id"), "GET", r.RequestURI)
