@@ -148,6 +148,7 @@ func (h *TokenAuthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	userdata, err := h.authAccount(ctx, authRequest)
 	if err != nil {
+		logWithID(ctx, "Auth failed %s", err)
 		http.Error(w, err.Error(), err.(*HTTPAuthError).Code)
 		return
 	}
@@ -185,7 +186,7 @@ func (h *TokenAuthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	log.Println(ctx.Value("id"), "Auth granted")
+	logWithID(ctx, "Auth granted")
 }
 
 func (h *TokenAuthHandler) authAccount(ctx context.Context, authRequest *AuthRequest) (*UserInfo, error) {
