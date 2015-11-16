@@ -276,9 +276,9 @@ func getScopes(req *http.Request) (*Scope, error) {
 	}
 
 	return &Scope{
-		getscope[0],
-		getscope[1],
-		p,
+		Type:    getscope[0],
+		Name:    getscope[1],
+		Actions: p,
 	}, nil
 }
 
