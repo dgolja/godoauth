@@ -89,13 +89,19 @@ function tests {
 	echo
 	echo "Tag busybox with localhost:5000/bar/foo:${timpe_stamp}"
 	docker tag busybox localhost:5000/bar/foo:${timpe_stamp}
-
 	echo
 	echo "Push image localhost:5000/bar/foo:${timpe_stamp}"
 	docker push localhost:5000/bar/foo:${timpe_stamp}
 	pass
 
-	echo ""
+	echo
+	echo "Tag busybox with localhost:5000/not/valid:${timpe_stamp}"
+	docker tag busybox localhost:5000/not/valid:${timpe_stamp}
+	echo
+	echo "Push image localhost:5000/bar/foo:${timpe_stamp}"
+	docker push localhost:5000/not/valid:${timpe_stamp}
+	fail
+
 }
 
 
