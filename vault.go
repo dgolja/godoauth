@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"golang.org/x/net/context"
+	"golang.org/x/net/context/ctxhttp"
 )
 
 type VaultClient struct {
@@ -40,7 +41,7 @@ func (c *VaultClient) getData(ctx context.Context, namespace, user string) (*htt
 		return nil, fmt.Errorf("error creating Vault API request: %v", err)
 	}
 	req.Header.Set("X-Vault-Token", c.Config.AuthToken)
-	return c.client.Do(req)
+	return ctxhttp.Do(ctx, c.client, req)
 }
 
 //RetrieveUser retrieve username/password/acl from Vault
