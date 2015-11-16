@@ -1,6 +1,7 @@
 package godoauth
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -157,9 +158,24 @@ func (h *TokenAuthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	tokenOutput := struct {
+		Token string `json:"token"`
+	}{
+		Token: stringToken,
+	}
+	tokenBytes, err := json.Marshal(tokenOutput)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	// All it's ok, so get the good news back
 	w.Header().Set("Content-Type", "application/json")
-	w.Write([]byte("{\"token\": \"" + stringToken + "\"}"))
+	_, err = w.Write(tokenBytes)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	log.Println(ctx.Value("id"), "Auth granted")
 }
 
