@@ -1,23 +1,32 @@
 ---
 godoauth:
-  build: .
+  build: ../.
   ports:
    - "5002:5002"
+  volumes:
+    - .:/etc/docker/godoauth
+  links:
+    - vault
 registry:
   image: registry:2.1.1
   ports:
     - "5000:5000"
   volumes:
-    - ./data/:/var/lib/registry
-    - ./certs/:/certs
+    - ./data:/var/lib/registry
+    - ./certs:/certs
   environment:
     REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY: "/var/lib/registry"
+    REGISTRY_HTTP_SECRET: santadoesntexists
     REGISTRY_AUTH: token
     REGISTRY_AUTH_TOKEN_REALM: "http://localhost:5002/auth"
     REGISTRY_AUTH_TOKEN_ISSUER: Token
     REGISTRY_AUTH_TOKEN_SERVICE: registry
     REGISTRY_AUTH_TOKEN_ROOTCERTBUNDLE: "/certs/server.pem"
-vault-dev:
+vault:
   image: voxxit/vault:latest
+  volumes:
+    - .:/tests
   ports:
     - "8200:8200"
+  command: server -log-level=debug --config=/tests/vault.conf
+

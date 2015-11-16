@@ -1,0 +1,24 @@
+---
+version: 0.1
+log:
+  level: info
+  file: /tmp/godoauth.log
+storage:
+  vault:
+    proto: http
+    host: vault
+    port: 8200
+    auth_token: 012bbb9e-caa9-6974-58d3-e8db1e853c21
+    timeout: 3s
+    pool: 10
+http:
+  timeout: 5s
+  addr: :5002
+  tls:
+#    certificate: certs/server.pem
+    key: certs/server.key
+token:
+   issuer: Token
+   expiration: 800
+   certificate: /etc/docker/godoauth/certs/server.pem
+   key: /etc/docker/godoauth/certs/server.key
