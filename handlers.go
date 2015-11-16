@@ -106,9 +106,6 @@ func (h *TokenAuthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 
 	log.Println(ctx.Value("id"), "GET", r.RequestURI)
-	// for k, v := range r.Header {
-	// 	log.Println("Header:", k, "Value:", v)
-	// }
 
 	authRequest, err := parseRequest(r)
 	if err != nil {
