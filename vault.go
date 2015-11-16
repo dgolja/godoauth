@@ -45,7 +45,7 @@ func (c *VaultClient) getData(ctx context.Context, namespace, user string) (*htt
 
 //RetrieveUser retrieve username/password/acl from Vault
 //BUG(dejan) We need to add some context and potentiall a pool of clients
-func (c *VaultClient) RetrieveUser(ctx context.Context, namespace, user string) (*UserInfo, *HTTPAuthError) {
+func (c *VaultClient) RetrieveUser(ctx context.Context, namespace, user string) (*UserInfo, error) {
 	resp, err := c.getData(ctx, namespace, user)
 	if err != nil {
 		log.Printf("%d error while communicating with vault server %s", ctx.Value("id"), err)
