@@ -14,7 +14,6 @@ import (
 
 type VaultClient struct {
 	Config *Vault
-	client *http.Client
 }
 
 var errRedirect = errors.New("redirect")
@@ -25,7 +24,7 @@ var errRedirect = errors.New("redirect")
 // If running vault in a HA mode you may need to follow the first redirect
 // to get the data from the leader
 func (c *VaultClient) getData(ctx context.Context, namespace, user string) (*http.Response, error) {
-	c.client = &http.Client{
+	client := &http.Client{
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
 			if len(via) > 2 {
 				return errRedirect
@@ -41,7 +40,7 @@ func (c *VaultClient) getData(ctx context.Context, namespace, user string) (*htt
 		return nil, fmt.Errorf("error creating Vault API request: %v", err)
 	}
 	req.Header.Set("X-Vault-Token", c.Config.AuthToken)
-	return ctxhttp.Do(ctx, c.client, req)
+	return ctxhttp.Do(ctx, client, req)
 }
 
 //RetrieveUser retrieve username/password/acl from Vault
