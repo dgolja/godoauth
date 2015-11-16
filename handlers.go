@@ -45,7 +45,7 @@ func NewPriv(privilege string) Priv {
 }
 
 func (p Priv) Actions() []string {
-	result := make([]string, 0)
+	var result []string
 	if p.Has(PrivPush) {
 		result = append(result, "push")
 	}
