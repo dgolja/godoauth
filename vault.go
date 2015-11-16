@@ -52,17 +52,19 @@ func (c *VaultClient) RetrieveUser(ctx context.Context, namespace, user string) 
 		return nil, ErrInternal
 	}
 
-	//log.Printf("DEBUG error calling vault API - %v", err)
-	if resp.StatusCode != http.StatusOK {
-		switch resp.StatusCode {
-		case http.StatusForbidden:
-			log.Print("DEBUG error vault token does not have enough permissions")
-			return nil, ErrInternal
-		case http.StatusNotFound:
-			return nil, ErrForbidden
-		default:
-			return nil, NewHTTPError(err.Error(), resp.StatusCode)
-		}
+	switch resp.StatusCode {
+	case http.StatusOK:
+		break
+
+	case http.StatusForbidden:
+		logWithID(ctx, "DEBUG error vault token does not have enough permissions")
+		return nil, ErrInternal
+
+	case http.StatusNotFound:
+		return nil, ErrForbidden
+
+	default:
+		return nil, NewHTTPError(err.Error(), resp.StatusCode)
 	}
 
 	// fmt.Printf("%v\n", resp)
