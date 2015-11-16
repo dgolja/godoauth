@@ -159,7 +159,6 @@ func (h *TokenAuthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// All it's ok, so get the good news back
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("{\"token\": \"" + stringToken + "\"}"))
 	log.Println(ctx.Value("id"), "Auth granted")
 }
