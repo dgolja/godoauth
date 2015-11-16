@@ -267,25 +267,24 @@ func getScopes(req *http.Request) (*Scope, error) {
 	if scope == "" {
 		return nil, nil
 	}
-	//log.Println(scope)
 
-	if len(strings.Split(scope, ":")) != 3 {
+	scopeSplit := strings.Split(scope, ":")
+	if len(scopeSplit) != 3 {
 		return nil, HTTPBadRequest("malformed scope")
 	}
 
-	getscope := strings.Split(scope, ":")
-	if getscope[0] != "repository" {
+	if scopeSplit[0] != "repository" {
 		return nil, HTTPBadRequest("malformed scope: 'repository' not specified")
 	}
 
-	p := NewPriv(getscope[2])
+	p := NewPriv(scopeSplit[2])
 	if !p.Valid() {
 		return nil, HTTPBadRequest("malformed scope: invalid privilege")
 	}
 
 	return &Scope{
-		Type:    getscope[0],
-		Name:    getscope[1],
+		Type:    scopeSplit[0],
+		Name:    scopeSplit[1],
 		Actions: p,
 	}, nil
 }
