@@ -17,10 +17,10 @@ import (
 type Priv uint
 
 const (
-	PrivIllegal Priv = 0
-	PrivPush         = 1
+	PrivPush    Priv = 1
 	PrivPull         = 2
 	PrivAll          = 3 // NB: equivlant to (PrivPush | PrivPull)
+	PrivIllegal      = 4
 )
 
 func (p Priv) Has(q Priv) bool {
@@ -28,7 +28,7 @@ func (p Priv) Has(q Priv) bool {
 }
 
 func (p Priv) Valid() bool {
-	return (PrivIllegal < p && p <= PrivAll)
+	return (PrivPush <= p && p < PrivIllegal)
 }
 
 func NewPriv(privilege string) Priv {
@@ -96,7 +96,10 @@ func actionAllowed(reqscopes *Scope, vuser *UserInfo) *Scope {
 	if allowedPrivs.Has(reqscopes.Actions) {
 		return reqscopes
 	}
-	return &Scope{"repository", reqscopes.Name, allowedPrivs | reqscopes.Actions}
+	if (allowedPrivs & reqscopes.Actions) > 0 {
+		return &Scope{"repository", reqscopes.Name, allowedPrivs & reqscopes.Actions}
+	}
+	return &Scope{}
 }
 
 type idKeyType int
