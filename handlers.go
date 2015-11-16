@@ -99,17 +99,27 @@ func actionAllowed(reqscopes *Scope, vuser *UserInfo) *Scope {
 	return &Scope{"repository", reqscopes.Name, allowedPrivs | reqscopes.Actions}
 }
 
+type idKeyType int
+
+var idKey = idKeyType(0)
+
+func logWithID(ctx context.Context, pattern string, vars ...interface{}) {
+	id := ctx.Value(idKey)
+	vars = append([]interface{}{id}, vars...)
+	log.Printf("%d "+pattern, vars...)
+}
+
 func (h *TokenAuthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	timeout := h.Config.HTTP.Timeout
-	transactionId := rand.Int31()
-	ctx, cancel := context.WithTimeout(context.WithValue(context.Background(), "id", transactionId), timeout)
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, idKey, rand.Int31())
+	ctx, cancel := context.WithTimeout(ctx, h.Config.HTTP.Timeout)
 	defer cancel()
 
-	log.Println(ctx.Value("id"), "GET", r.RequestURI)
+	logWithID(ctx, "GET %v", r.RequestURI)
 
 	authRequest, err := parseRequest(r)
 	if err != nil {
-		log.Printf("%d %s", ctx.Value("id"), err)
+		logWithID(ctx, err.Error())
 		http.Error(w, err.Error(), err.(*HTTPAuthError).Code)
 		return
 	}
@@ -150,7 +160,7 @@ func (h *TokenAuthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	stringToken, err := h.CreateToken(grantedActions, authRequest.Service, authRequest.Account)
 	if err != nil {
-		log.Printf("%d token error %s\n", ctx.Value("id"), err)
+		logWithID(ctx, "token error %s", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -162,6 +172,7 @@ func (h *TokenAuthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	tokenBytes, err := json.Marshal(tokenOutput)
 	if err != nil {
+		logWithID(ctx, "error marshalling token output: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -170,6 +181,7 @@ func (h *TokenAuthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	_, err = w.Write(tokenBytes)
 	if err != nil {
+		log.Printf("error writing result to client: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"strings"
 
@@ -48,7 +47,7 @@ func (c *VaultClient) getData(ctx context.Context, namespace, user string) (*htt
 func (c *VaultClient) RetrieveUser(ctx context.Context, namespace, user string) (*UserInfo, error) {
 	resp, err := c.getData(ctx, namespace, user)
 	if err != nil {
-		log.Printf("%d error while communicating with vault server %s", ctx.Value("id"), err)
+		logWithID(ctx, "error while communicating with vault server: %v", err)
 		return nil, ErrInternal
 	}
 
@@ -79,7 +78,7 @@ func (c *VaultClient) RetrieveUser(ctx context.Context, namespace, user string) 
 	dec := json.NewDecoder(resp.Body)
 	err = dec.Decode(&respData)
 	if err != nil {
-		log.Printf("%d error parsing JSON response: %v", ctx.Value("id"), err)
+		logWithID(ctx, "error parsing JSON response: %v", err)
 		return nil, ErrInternal
 	}
 
@@ -88,7 +87,7 @@ func (c *VaultClient) RetrieveUser(ctx context.Context, namespace, user string) 
 	for _, x := range semiColonSplit {
 		xx := strings.Split(x, ":")
 		if len(xx) != 3 {
-			log.Printf("%d expected length 3: %v", ctx.Value("id"), err)
+			logWithID(ctx, "expected length 3: %v", err)
 			return nil, ErrInternal
 		}
 		accessMap[xx[1]] = NewPriv(xx[2])
