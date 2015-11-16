@@ -97,7 +97,11 @@ func actionAllowed(reqscopes *Scope, vuser *UserInfo) *Scope {
 		return reqscopes
 	}
 	if (allowedPrivs & reqscopes.Actions) > 0 {
-		return &Scope{"repository", reqscopes.Name, allowedPrivs & reqscopes.Actions}
+		return &Scope{
+			Type:    "repository",
+			Name:    reqscopes.Name,
+			Actions: allowedPrivs & reqscopes.Actions,
+		}
 	}
 	return &Scope{}
 }
