@@ -24,6 +24,7 @@ var errRedirect = errors.New("redirect")
 // If running vault in a HA mode you may need to follow the first redirect
 // to get the data from the leader
 func (c *VaultClient) getData(ctx context.Context, namespace, user string) (*http.Response, error) {
+	ctx, _ = context.WithTimeout(ctx, c.Config.Timeout)
 	client := &http.Client{
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
 			if len(via) > 2 {
@@ -31,7 +32,6 @@ func (c *VaultClient) getData(ctx context.Context, namespace, user string) (*htt
 			}
 			return nil
 		},
-		Timeout: c.Config.Timeout,
 	}
 
 	url := fmt.Sprintf("%s/v1/%s/%s", c.Config.HostURL(), namespace, user)
