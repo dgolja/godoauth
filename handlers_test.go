@@ -46,20 +46,14 @@ func TestParseRequest(t *testing.T) {
 
 func TestPrivileges(t *testing.T) {
 
-	if !NewPriv("push,pull").Has(PrivPull) {
-		t.Fatalf("PrivAll does have PrivPull")
-	}
-
-	if !NewPriv("push,pull").Has(PrivPush) {
-		t.Fatalf("PrivAll does have PrivPush")
+	for p := 1; p < 4; p++ {
+		if !NewPriv("push,pull").Has(Priv(p)) {
+			t.Fatalf("push,pull does have %s", Priv(p).Actions())
+		}
 	}
 
 	if NewPriv("push,pull").Has(PrivIllegal) {
 		t.Fatalf("PrivAll does not have PrivIllegal")
-	}
-
-	if !NewPriv("push,pull").Has(PrivAll) {
-		t.Fatalf("PrivAll does have PrivAll")
 	}
 
 	if !NewPriv("pull").Has(PrivPull) {
@@ -144,4 +138,36 @@ func TestActionAllowed(t *testing.T) {
 		t.Fatalf("Expected foo/bar with privilege Push, but received %v", scope)
 	}
 
+}
+
+func TestUnmarshalScopeText(t *testing.T) {
+	s := &Scope{}
+
+	invalidFormats := []string{
+		"something",
+		"repository:namespace",
+		"repository:namespace:wrong",
+		"something:bla/bla:push",
+		"push:alpine/master:pull",
+	}
+	var err error
+	for _, v := range invalidFormats {
+		err = s.UnmarshalText([]byte(v))
+		if err == nil {
+			t.Fatalf("Expected an error for %s", v)
+		}
+	}
+
+	validFormats := []string{
+		"repository:golja/godoauth:push,pull",
+		"repository:golja/godoauth:pull",
+		"repository:golja/godoauth:pull,push",
+		"repository:golja/godoauth:push",
+	}
+	for _, v := range validFormats {
+		err = s.UnmarshalText([]byte(v))
+		if err != nil {
+			t.Fatalf("Unexpected error for %s", v)
+		}
+	}
 }
