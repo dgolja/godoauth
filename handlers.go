@@ -78,6 +78,29 @@ type Scope struct {
 	Actions Priv   // Priv who would guess that ?
 }
 
+// UnmarshalText decodes the Scope data from the standard text-form:
+// <type>:<name>:<actions>
+func (s *Scope) UnmarshalText(b []byte) error {
+	split := strings.Split(string(b), ":")
+	if len(split) != 3 {
+		return fmt.Errorf("malformed scope")
+	}
+
+	if split[0] != "repository" {
+		return fmt.Errorf("malformed scope: 'repository' not specified")
+	}
+
+	p := NewPriv(split[2])
+	if !p.Valid() {
+		return fmt.Errorf("malformed scope: invalid privilege")
+	}
+
+	s.Type = split[0]
+	s.Name = split[1]
+	s.Actions = p
+	return nil
+}
+
 // AuthRequest parse the client request
 type AuthRequest struct {
 	Service  string
@@ -268,25 +291,12 @@ func getScopes(req *http.Request) (*Scope, error) {
 		return nil, nil
 	}
 
-	scopeSplit := strings.Split(scope, ":")
-	if len(scopeSplit) != 3 {
-		return nil, HTTPBadRequest("malformed scope")
+	s := &Scope{}
+	err := s.UnmarshalText([]byte(scope))
+	if err != nil {
+		return nil, HTTPBadRequest(err.Error())
 	}
-
-	if scopeSplit[0] != "repository" {
-		return nil, HTTPBadRequest("malformed scope: 'repository' not specified")
-	}
-
-	p := NewPriv(scopeSplit[2])
-	if !p.Valid() {
-		return nil, HTTPBadRequest("malformed scope: invalid privilege")
-	}
-
-	return &Scope{
-		Type:    scopeSplit[0],
-		Name:    scopeSplit[1],
-		Actions: p,
-	}, nil
+	return s, nil
 }
 
 func parseRequest(req *http.Request) (*AuthRequest, error) {
