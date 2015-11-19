@@ -157,17 +157,52 @@ func TestUnmarshalScopeText(t *testing.T) {
 		}
 	}
 
-	validFormats := []string{
-		"repository:golja/godoauth:push,pull",
-		"repository:golja/godoauth:pull",
-		"repository:golja/godoauth:pull,push",
-		"repository:golja/godoauth:push",
+	validFormats := []struct {
+		in  string
+		out Scope
+	}{
+		{
+			"repository:golja/godoauth:push,pull",
+			Scope{
+				Type:    "repository",
+				Name:    "golja/godoauth",
+				Actions: PrivPull | PrivPush,
+			},
+		},
+		{
+			"repository:golja/godoauth:pull,push",
+			Scope{
+				Type:    "repository",
+				Name:    "golja/godoauth",
+				Actions: PrivPull | PrivPush,
+			},
+		},
+		{
+			"repository:golja/godoauth:pull",
+			Scope{
+				Type:    "repository",
+				Name:    "golja/godoauth",
+				Actions: PrivPull,
+			},
+		},
+		{
+			"repository:golja/godoauth:push",
+			Scope{
+				Type:    "repository",
+				Name:    "golja/godoauth",
+				Actions: PrivPush,
+			},
+		},
 	}
+
 	for _, v := range validFormats {
 		s := &Scope{}
-		err = s.UnmarshalText([]byte(v))
+		err = s.UnmarshalText([]byte(v.in))
 		if err != nil {
-			t.Fatalf("Unexpected error for %s", v)
+			t.Errorf("unexpected error for %s", v)
+		}
+		if *s != v.out {
+			t.Errorf("UnmarshalText(%q) = %v, expected %v", v.in, *s, v.out)
 		}
 	}
 }
