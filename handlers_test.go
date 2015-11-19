@@ -140,7 +140,7 @@ func TestActionAllowed(t *testing.T) {
 
 }
 
-func TestUnmarshalScopeText(t *testing.T) {
+func TestScopeUnmarshalText(t *testing.T) {
 	invalidFormats := []string{
 		"something",
 		"repository:namespace",
@@ -148,12 +148,10 @@ func TestUnmarshalScopeText(t *testing.T) {
 		"something:bla/bla:push",
 		"push:alpine/master:pull",
 	}
-	var err error
 	for _, v := range invalidFormats {
 		s := &Scope{}
-		err = s.UnmarshalText([]byte(v))
-		if err == nil {
-			t.Fatalf("Expected an error for %s", v)
+		if err := s.UnmarshalText([]byte(v)); err == nil {
+			t.Fatalf("expected error for invalid format %q", v)
 		}
 	}
 
@@ -197,9 +195,8 @@ func TestUnmarshalScopeText(t *testing.T) {
 
 	for _, v := range validFormats {
 		s := &Scope{}
-		err = s.UnmarshalText([]byte(v.in))
-		if err != nil {
-			t.Errorf("unexpected error for %s", v)
+		if err := s.UnmarshalText([]byte(v.in)); err != nil {
+			t.Errorf("unexpected error for %q", v.in)
 		}
 		if *s != v.out {
 			t.Errorf("UnmarshalText(%q) = %v, expected %v", v.in, *s, v.out)
