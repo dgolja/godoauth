@@ -141,8 +141,6 @@ func TestActionAllowed(t *testing.T) {
 }
 
 func TestUnmarshalScopeText(t *testing.T) {
-	s := &Scope{}
-
 	invalidFormats := []string{
 		"something",
 		"repository:namespace",
@@ -152,6 +150,7 @@ func TestUnmarshalScopeText(t *testing.T) {
 	}
 	var err error
 	for _, v := range invalidFormats {
+		s := &Scope{}
 		err = s.UnmarshalText([]byte(v))
 		if err == nil {
 			t.Fatalf("Expected an error for %s", v)
@@ -165,6 +164,7 @@ func TestUnmarshalScopeText(t *testing.T) {
 		"repository:golja/godoauth:push",
 	}
 	for _, v := range validFormats {
+		s := &Scope{}
 		err = s.UnmarshalText([]byte(v))
 		if err != nil {
 			t.Fatalf("Unexpected error for %s", v)
