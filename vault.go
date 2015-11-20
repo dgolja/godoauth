@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 
@@ -42,6 +43,39 @@ func (c *VaultClient) getData(ctx context.Context, namespace, user string) (*htt
 	return ctxhttp.Do(ctx, client, req)
 }
 
+func (c *VaultClient) UnmarshalText(r io.Reader) (*UserInfo, error) {
+
+	respData := struct {
+		Data struct {
+			Access   string `json:"access"`
+			Password string `json:"password"`
+		} `json:"data"`
+	}{}
+
+	dec := json.NewDecoder(r)
+
+	var err error
+	err = dec.Decode(&respData)
+	if err != nil {
+		return nil, ErrInternal
+	}
+
+	accessMap := make(map[string]Priv)
+	semiColonSplit := strings.Split(respData.Data.Access, ";")
+	for _, x := range semiColonSplit {
+		xx := strings.Split(x, ":")
+		if len(xx) != 3 {
+			return nil, NewHTTPError("Wrong access format", http.StatusInternalServerError)
+		}
+		accessMap[xx[1]] = NewPriv(xx[2])
+	}
+
+	return &UserInfo{
+		Password: respData.Data.Password,
+		Access:   accessMap,
+	}, nil
+}
+
 //RetrieveUser retrieve username/password/acl from Vault
 //BUG(dejan) We need to add some context and potentiall a pool of clients
 func (c *VaultClient) RetrieveUser(ctx context.Context, namespace, user string) (*UserInfo, error) {
@@ -66,35 +100,11 @@ func (c *VaultClient) RetrieveUser(ctx context.Context, namespace, user string) 
 		return nil, NewHTTPError(err.Error(), resp.StatusCode)
 	}
 
-	respData := struct {
-		Data struct {
-			Access   string `json:"access"`
-			Password string `json:"password"`
-		} `json:"data"`
-	}{}
-
 	defer resp.Body.Close()
-	dec := json.NewDecoder(resp.Body)
-	err = dec.Decode(&respData)
+	userInfo, err := c.UnmarshalText(resp.Body)
 	if err != nil {
-		logWithID(ctx, "error parsing JSON response: %v", err)
-		return nil, ErrInternal
+		logWithID(ctx, "Error while unmarhsaling vault response: %v", err)
 	}
-
-	accessMap := make(map[string]Priv)
-	semiColonSplit := strings.Split(respData.Data.Access, ";")
-	for _, x := range semiColonSplit {
-		xx := strings.Split(x, ":")
-		if len(xx) != 3 {
-			logWithID(ctx, "expected length 3: %v", err)
-			return nil, ErrInternal
-		}
-		accessMap[xx[1]] = NewPriv(xx[2])
-	}
-
-	return &UserInfo{
-		Username: user,
-		Password: respData.Data.Password,
-		Access:   accessMap,
-	}, nil
+	userInfo.Username = user
+	return userInfo, err
 }
