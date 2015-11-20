@@ -1,7 +1,6 @@
 package godoauth
 
 import (
-	//	"gopkg.in/yaml.v2"
 	"bytes"
 	"reflect"
 	"testing"

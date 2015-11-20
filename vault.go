@@ -66,7 +66,6 @@ func (c *VaultClient) RetrieveUser(ctx context.Context, namespace, user string) 
 		return nil, NewHTTPError(err.Error(), resp.StatusCode)
 	}
 
-	// fmt.Printf("%v\n", resp)
 	respData := struct {
 		Data struct {
 			Access   string `json:"access"`

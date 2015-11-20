@@ -225,7 +225,7 @@ func (h *TokenAuthHandler) authAccount(ctx context.Context, authRequest *AuthReq
 	if err != nil {
 		return nil, err
 	}
-	//		log.Printf("DEBUG %#v", vuser)
+
 	if vuser.Password == authRequest.Password {
 		return vuser, nil
 	}
