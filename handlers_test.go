@@ -45,47 +45,69 @@ func TestParseRequest(t *testing.T) {
 }
 
 func TestPrivileges(t *testing.T) {
-
 	for p := 1; p < 4; p++ {
 		if !NewPriv("push,pull").Has(Priv(p)) {
 			t.Fatalf("push,pull does have %s", Priv(p).Actions())
 		}
 	}
 
-	if NewPriv("push,pull").Has(PrivIllegal) {
-		t.Fatalf("PrivAll does not have PrivIllegal")
+	tests := []struct {
+		in    string
+		check Priv
+		out   bool
+	}{
+		{
+			"push,pull",
+			PrivIllegal,
+			false,
+		},
+		{
+			"pull",
+			PrivAll,
+			false,
+		},
+		{
+			"pull",
+			PrivPush,
+			false,
+		},
+		{
+			"pull",
+			PrivIllegal,
+			false,
+		},
+		{
+			"push",
+			PrivAll,
+			false,
+		},
+		{
+			"push",
+			PrivPull,
+			false,
+		},
+		{
+			"push",
+			PrivIllegal,
+			false,
+		},
+		{
+			"pull",
+			PrivPull,
+			true,
+		},
+		{
+			"push",
+			PrivPush,
+			true,
+		},
 	}
 
-	if !NewPriv("pull").Has(PrivPull) {
-		t.Fatalf("PrivPull does have PrivPull")
-	}
-
-	if NewPriv("pull").Has(PrivAll) {
-		t.Fatalf("PrivPull does not have PrivAll")
-	}
-
-	if NewPriv("pull").Has(PrivPush) {
-		t.Fatalf("PrivPull does not have PrivPush")
-	}
-
-	if NewPriv("pull").Has(PrivIllegal) {
-		t.Fatalf("PrivPull does not have PrivIllegal")
-	}
-
-	if !NewPriv("push").Has(PrivPush) {
-		t.Fatalf("PrivPush does have PrivPush")
-	}
-
-	if NewPriv("push").Has(PrivAll) {
-		t.Fatalf("PrivPush does not have PrivAll")
-	}
-
-	if NewPriv("push").Has(PrivPull) {
-		t.Fatalf("PrivPush does not have PrivPull")
-	}
-
-	if NewPriv("push").Has(PrivIllegal) {
-		t.Fatalf("PrivPush does not have PrivIllegal")
+	for _, tt := range tests {
+		p := NewPriv(tt.in)
+		if p.Has(tt.check) != tt.out {
+			t.Errorf("NewPriv(%q).Has(%v) = %v, expected %v", tt.in, tt.check, p.Has(tt.check), tt.out)
+		}
 	}
 }
 
