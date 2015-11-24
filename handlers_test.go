@@ -6,14 +6,26 @@ import (
 )
 
 func TestParseRequest(t *testing.T) {
-	req, _ := http.NewRequest("GET", "/wrong", nil)
-	_, err := parseRequest(req)
-	if err == nil {
-		t.Fatalf("Invalid request %s didn't fail", req.URL.RequestURI())
+	invalidRequests := []string{
+		"/wrong",
+		"/?account=",
+		"/?service&account=foo",
+		"/?repository=dejan/foo",
+		"/?repository=dejan/foo:push,pull",
+		"/?service=registry&account=bla&scope=dejan/foo:wrong",
+		"",
 	}
 
-	req, _ = http.NewRequest("GET", "/?account=foo", nil)
-	_, err = parseRequest(req)
+	for _, url := range invalidRequests {
+		req, _ := http.NewRequest("GET", url, nil)
+		_, err := parseRequest(req)
+		if err == nil {
+			t.Fatalf("Invalid request %s didn't fail", req.URL.RequestURI())
+		}
+	}
+
+	req, _ := http.NewRequest("GET", "/?account=foo", nil)
+	_, err := parseRequest(req)
 	if err == nil {
 		t.Fatalf("Invalid request %s didn't fail", req.URL.RequestURI())
 	}
@@ -99,6 +111,11 @@ func TestPrivileges(t *testing.T) {
 		{
 			"push",
 			PrivPush,
+			true,
+		},
+		{
+			"wrong",
+			PrivIllegal,
 			true,
 		},
 	}

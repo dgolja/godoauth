@@ -293,7 +293,7 @@ func getScopes(req *http.Request) (*Scope, error) {
 
 	s := &Scope{}
 	err := s.UnmarshalText([]byte(scope))
-	if err != nil {
+	if err != nil || s.Actions.Has(PrivIllegal) {
 		return nil, HTTPBadRequest(err.Error())
 	}
 	return s, nil
