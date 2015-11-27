@@ -77,7 +77,6 @@ func (c *VaultClient) UnmarshalText(r io.Reader) (*UserInfo, error) {
 }
 
 //RetrieveUser retrieve username/password/acl from Vault
-//BUG(dejan) We need to add some context and potentiall a pool of clients
 func (c *VaultClient) RetrieveUser(ctx context.Context, namespace, user string) (*UserInfo, error) {
 	resp, err := c.getData(ctx, namespace, user)
 	if err != nil {
