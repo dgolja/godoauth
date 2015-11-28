@@ -8,13 +8,6 @@ type Handler struct {
 
 // NewHandler returns a new instance of Handler built from a config.
 func NewHandler(authHandler *TokenAuthHandler) *Handler {
-	// BUG(dejan) add support to write logs to a text file
-	//	if c.Log.File != "" {
-	//		// BUG(dejan): Implement file handler
-	//		s.Handler = handlers.CombinedLoggingHandler(os.Stdout, s.Handler)
-	//	} else {
-	//		s.Handler = handlers.CombinedLoggingHandler(os.Stdout, s.Handler)
-	//	}
 	s := &Handler{
 		ServeMux: http.NewServeMux(),
 	}
