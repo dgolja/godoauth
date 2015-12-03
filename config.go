@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/url"
 	"os"
 	"strings"
@@ -114,6 +115,15 @@ func (c *Config) Parse(rd io.Reader) error {
 
 	if c.HTTP.Timeout <= 0 {
 		c.HTTP.Timeout = time.Duration(5 * time.Second)
+	}
+
+	if c.Log.File != "" {
+		f, err := os.OpenFile(c.Log.File, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0644)
+		if err != nil {
+			log.Fatalf("error opening file: %v", err)
+		}
+		defer f.Close()
+		log.SetOutput(f)
 	}
 
 	return nil
