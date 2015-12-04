@@ -212,7 +212,7 @@ func (h *TokenAuthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	_, err = w.Write(tokenBytes)
 	if err != nil {
-		log.Printf("error writing result to client: %v", err)
+		logWithID(ctx, "error writing result to client: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -302,7 +302,6 @@ func getScopes(req *http.Request) (*Scope, error) {
 func parseRequest(req *http.Request) (*AuthRequest, error) {
 	service, err := getService(req)
 	if err != nil {
-		log.Print(err)
 		return nil, err
 	}
 
