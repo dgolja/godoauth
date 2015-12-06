@@ -84,6 +84,8 @@ func (c *VaultClient) RetrieveUser(ctx context.Context, namespace, user string) 
 		return nil, ErrInternal
 	}
 
+	defer resp.Body.Close()
+
 	switch resp.StatusCode {
 	case http.StatusOK:
 		break
@@ -99,7 +101,6 @@ func (c *VaultClient) RetrieveUser(ctx context.Context, namespace, user string) 
 		return nil, NewHTTPError(err.Error(), resp.StatusCode)
 	}
 
-	defer resp.Body.Close()
 	userInfo, err := c.UnmarshalText(resp.Body)
 	if err != nil {
 		logWithID(ctx, "Error while unmarhsaling vault response: %v", err)
