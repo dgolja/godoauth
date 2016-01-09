@@ -8,7 +8,7 @@ godoauth:
   links:
     - vault
 registry:
-  image: registry:2.2.0
+  image: registry:2.2.1
   ports:
     - "5000:5000"
   volumes:
