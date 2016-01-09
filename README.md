@@ -101,7 +101,7 @@ with this configuration section.
       no
     </td>
     <td>
-      Sets logging file. TODO
+      Sets logging file.
     </td>
   </tr>
 </table>
