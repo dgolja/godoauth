@@ -88,7 +88,7 @@ token:
    key: certs/server.key
 `
 
-// MinConfigYamlV0_1 is a Version 0.1 yaml document representing minimal settings
+// BrokenVaultYamlV0_1 is a Version 0.1 yaml document representing a broken setting
 var BrokenVaultYamlV0_1 = `
 ---
 #sample config file
@@ -99,7 +99,7 @@ storage:
   vault:
     proto: http
     host: 127.0.0.1
-    port: port
+    port: NOT_VALID_PORT
     auth_token: dbXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXX
 http:
   addr: :5002
