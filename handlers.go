@@ -101,7 +101,7 @@ func (s *Scope) UnmarshalText(b []byte) error {
 	return nil
 }
 
-// AuthRequest parse the client request
+// AuthRequest holds the parsed client request
 type AuthRequest struct {
 	Service  string
 	Account  string

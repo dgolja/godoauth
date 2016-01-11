@@ -39,6 +39,7 @@ type Vault struct {
 	Port      int           `yaml:"port"`
 	AuthToken string        `yaml:"auth_token"`
 	Proto     string        `yaml:"proto"`
+	Pool      int           `yaml:"pool,omitempty"`
 	Timeout   time.Duration `yaml:"timeout,omitempty"`
 }
 
@@ -111,6 +112,10 @@ func (c *Config) Parse(rd io.Reader) error {
 
 	if c.Storage.Vault.Timeout <= 0 {
 		c.Storage.Vault.Timeout = time.Duration(3 * time.Second)
+	}
+
+	if c.Storage.Vault.Pool <= 0 {
+		c.Storage.Vault.Pool = 2
 	}
 
 	if c.HTTP.Timeout <= 0 {

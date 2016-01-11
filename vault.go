@@ -32,6 +32,7 @@ func (c *VaultClient) getData(ctx context.Context, namespace, user string) (*htt
 			}
 			return nil
 		},
+		Transport: &http.Transport{MaxIdleConnsPerHost: c.Config.Pool},
 	}
 
 	url := fmt.Sprintf("%s/v1/%s/%s", c.Config.HostURL(), namespace, user)

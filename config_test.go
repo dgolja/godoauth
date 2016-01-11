@@ -20,6 +20,7 @@ var configStruct = Config{
 			Port:      8200,
 			AuthToken: "dbXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXX",
 			Timeout:   time.Duration(3 * time.Second),
+			Pool:      2,
 		},
 	},
 	HTTP: ServerConf{
@@ -142,9 +143,11 @@ func TestParseMinimalConfig(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error while parsing config file: %s", err)
 	}
-	// TODO(dejan): Fix the default value setting for Timeout.
 	if config.Storage.Vault.Timeout != time.Duration(3*time.Second) {
 		t.Fatalf("unexpected default Vault timeout value %s", config.Storage.Vault.Timeout)
+	}
+	if config.Storage.Vault.Pool != 2 {
+		t.Fatalf("unexpected default Vault pool value %s", config.Storage.Vault.Pool)
 	}
 	if config.HTTP.Timeout != time.Duration(5*time.Second) {
 		t.Fatalf("unexpected default HTTP timeout value %s", config.Storage.Vault.Timeout)
